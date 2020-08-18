@@ -13,10 +13,11 @@
 #' @importFrom stringdist stringdistmatrix
 #' @importFrom readxl read_excel
 #' @importFrom stringr str_extract
+#' @importFrom dplyr full_join
 #' @export
 
 
-Clonality <- function (File = "input.xlsx",
+Clonality <- function (File = "t.test.xlsx",
                        NewF = "output.xlsx",
                        ID_Column = "Sequence ID",
                        Vgene_Column = "V-GENE and allele",
@@ -24,6 +25,7 @@ Clonality <- function (File = "input.xlsx",
                        CDR3_Column = "JUNCTION",
                        cell = "T",
                        rm.junc.na = TRUE,
+                       output.orig = FALSE,
                        Mismatch = 0)
 
 
@@ -31,10 +33,10 @@ Clonality <- function (File = "input.xlsx",
 
 
 #Read input xlsx table.
-  df <- read_excel(File)
+  df.import <- read_excel(File)
 
   if(rm.junc.na == TRUE){
-    df <- df[!is.na(df[[CDR3_Column]]),]
+    df <- df.import[!is.na(df.import[[CDR3_Column]]),]
   }
 
   #Create simple table
@@ -87,8 +89,8 @@ Clonality <- function (File = "input.xlsx",
   for (i in seq(1, length(pass))) {
     df <- data.frame(Seq = labels(cutree(hclust(pass[[i]]), h = Mismatch)),
                      Clones = cutree(hclust(pass[[i]]), h = Mismatch),
-                     ID = sprintf("%s.%s", i, cutree(hclust(pass[[i]]),
-                                                                                                                        h = Mismatch)), stringsAsFactors = F)
+                     ID = sprintf("%s.%s", i, cutree(hclust(pass[[i]]),h = Mismatch)), stringsAsFactors = F)
+
     df2 <- clonal[clonal[["CDR3"]] %in% df$Seq, ]
     V.genes.2 <- df2[["Vgene"]]
     J.genes.2 <- df2[["Jgene"]]
@@ -104,6 +106,12 @@ Clonality <- function (File = "input.xlsx",
   n <- nrow(clonal[is.na(clonal$Clonality), ])
 
   clonal[is.na(clonal$Clonality), ]$Clonality <- sprintf("U%s", seq(1, n))
+
+
+
+  if(output.orig == TRUE){
+    clonal  <- full_join(df.import, clonal, by = setNames("CellId",ID_Column))
+}
 
   openxlsx::write.xlsx(x = clonal, file = NewF, row.names = F)
 }

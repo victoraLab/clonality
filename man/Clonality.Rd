@@ -5,13 +5,15 @@
 \title{Define clonality}
 \usage{
 Clonality(
-  File = "input.xlsx",
+  File = "t.test.xlsx",
   NewF = "output.xlsx",
+  ID_Column = "Sequence ID",
   Vgene_Column = "V-GENE and allele",
   Jgene_Column = "J-GENE and allele",
   CDR3_Column = "JUNCTION",
   cell = "T",
   rm.junc.na = TRUE,
+  output.orig = FALSE,
   Mismatch = 0
 )
 }
