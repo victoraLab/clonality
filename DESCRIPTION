@@ -18,4 +18,7 @@ Imports:
     stringdist,
     readxl,
     stringr,
-    dplyr
+    dplyr,
+    gtools
+Depends: 
+    R (>= 2.10)

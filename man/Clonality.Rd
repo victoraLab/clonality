@@ -5,8 +5,8 @@
 \title{Define clonality}
 \usage{
 Clonality(
-  File = "t.test.xlsx",
-  NewF = "output.xlsx",
+  File = "example.xlsx",
+  NewF = "output",
   ID_Column = "Sequence ID",
   Vgene_Column = "V-GENE and allele",
   Jgene_Column = "J-GENE and allele",
@@ -18,9 +18,11 @@ Clonality(
 )
 }
 \arguments{
-\item{File}{Path to a xlsx input containing the clonality data to be defined.}
+\item{File}{Data frame or full path to a xlsx input containing TCR/BCR repertoire data.}
 
-\item{NewF}{The output name.}
+\item{NewF}{The file output name.}
+
+\item{ID_Column}{The column containing an individual sequence ID.}
 
 \item{Vgene_Column}{The column name containing V gene names.}
 
@@ -30,10 +32,17 @@ Clonality(
 
 \item{cell}{Choose between T for T cell or B for Bcell.}
 
-\item{rm.junc.na}{Remove rows with NA junctions. If \code{FALSE}, NA rows are considered unique.}
+\item{rm.junc.na}{Remove rows with NA junctions. If \code{FALSE}, NA rows are considered unique sequences.}
+
+\item{output.orig}{If \code{TRUE}, outputs the original input, if \code{FALSE} outputs a minimum table.}
 
 \item{Mismatch}{Percent of mismatches allowed in CDR3 before subsetting a group.}
 }
 \description{
 Returns the input with an additional clonality column with clonal definitions.
+}
+\examples{
+Clonality(File = tra)
+Clonality(File = trb)
+Clonality(File = "example.xlsx")
 }
