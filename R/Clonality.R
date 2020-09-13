@@ -21,7 +21,7 @@
 #' @importFrom stringr str_extract
 #' @importFrom dplyr full_join
 #' @importFrom gtools mixedorder
-
+#' @export
 
 clonality <- function (File = "example.xlsx",
                        NewF = "output",
