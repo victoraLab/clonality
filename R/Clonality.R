@@ -126,7 +126,7 @@ clonality <- function (File = "example.xlsx",
 
   #Save output
   if(class(File)[1] != "character"){
-    assign(x = NewF, value = clonal)
+    assign(x = NewF, value = clonal, envir = .GlobalEnv)
   }
   else{
     openxlsx::write.xlsx(x = clonal, file = sprintf("%s.xlsx", NewF), row.names = F)
