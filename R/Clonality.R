@@ -13,9 +13,9 @@
 #' @param output.orig If `TRUE`, outputs the original input, if `FALSE` outputs a minimum table.
 #' @param Mismatch Percent of mismatches allowed in CDR3 before subsetting a group.
 #' @examples
-#' Clonality(File = tra)
-#' Clonality(File = trb)
-#' Clonality(File = "example.xlsx")
+#' clonality(File = tra)
+#' clonality(File = trb)
+#' clonality(File = "example.xlsx")
 #' @importFrom stringdist stringdistmatrix
 #' @importFrom readxl read_excel
 #' @importFrom stringr str_extract
