@@ -23,6 +23,6 @@ A data frame with 49 rows and 9 variables:
 trb
 }
 \description{
-A dataset containing TCR Beta sequences to use as a test for Clonality.
+A dataset containing TCR Beta sequences to use as a test for clonality.
 }
 \keyword{datasets}
