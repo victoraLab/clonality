@@ -1,6 +1,6 @@
 #' A small IMGT TCR Beta sequences dataset.
 #'
-#' A dataset containing TCR Beta sequences to use as a test for Clonality.
+#' A dataset containing TCR Beta sequences to use as a test for clonality.
 #'
 #' @format A data frame with 49 rows and 9 variables:
 #' \describe{
@@ -20,7 +20,7 @@
 
 #' A small IMGT TCR Alpha sequences dataset.
 #'
-#' A dataset containing TCR Alpha sequences to use as a test for Clonality.
+#' A dataset containing TCR Alpha sequences to use as a test for clonality.
 #'
 #' @format A data frame with 49 rows and 9 variables:
 #' \describe{
