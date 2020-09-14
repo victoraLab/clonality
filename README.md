@@ -13,6 +13,8 @@ The tra and trb objects are small sequencing datasets that can be used as a test
 
 ```R
 head(tra)
+
+clonality(File = tra, NewF = "tra.output")
 ```
 
 
