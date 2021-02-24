@@ -1,6 +1,6 @@
-# Clonality
+# clonality
 
-The Clonality package function helps to define B or T cell repertoire clonality automatically.
+The clonality package function helps to define B or T cell repertoire clonality automatically.
 
 # Instalation:
 ```R
