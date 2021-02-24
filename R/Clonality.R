@@ -8,9 +8,10 @@
 #' @param Vgene_Column The column name containing V gene names.
 #' @param Jgene_Column The column name containing J gene names.
 #' @param CDR3_Column The column name containing CDR3 sequences - nt or aa.
-#' @param cell Choose between T for T cell or B for Bcell.
-#' @param rm.junc.na Remove rows with NA junctions. If `FALSE`, NA rows are considered unique sequences.
-#' @param output.orig If `TRUE`, outputs the original input, if `FALSE` outputs a minimum table.
+#' @param Cell Choose between T for T Cell or B for B Cell.
+#' @param Pattern Use regular expression to detect the V/J Gene names.
+#' @param Rm.junc.na Remove rows with NA junctions. If `FALSE`, NA rows are considered unique sequences.
+#' @param Output.orig If `TRUE`, outputs the original input, if `FALSE` outputs a minimum table.
 #' @param Mismatch Percent of mismatches allowed in CDR3 before subsetting a group.
 #' @examples
 #' clonality(File = tra)
@@ -29,9 +30,10 @@ clonality <- function (File = "example.xlsx",
                        Vgene_Column = "V-GENE and allele",
                        Jgene_Column = "J-GENE and allele",
                        CDR3_Column = "JUNCTION",
-                       cell = "T",
-                       rm.junc.na = TRUE,
-                       output.orig = FALSE,
+                       Cell = "T",
+                       Pattern = NULL,
+                       Rm.junc.na = TRUE,
+                       Output.orig = FALSE,
                        Mismatch = 0)
 
 
@@ -46,33 +48,34 @@ clonality <- function (File = "example.xlsx",
     df.import <- read_excel(File)
     }
 
-# if rm.junc.na is TRUE, remove all NA junctions prior to running
+# if Rm.junc.na is TRUE, remove all NA junctions prior to running
 
-  if(rm.junc.na == TRUE){
+  if(Rm.junc.na == TRUE){
     df <- df.import[!is.na(df.import[[CDR3_Column]]),]
   }
 
-  #Create simple table
-  clonal <- data.frame(CellId = df[[ID_Column]],
-                       Vgene = df[[Vgene_Column]],
-                       Jgene = df[[Jgene_Column]],
-                       CDR3 = df[[CDR3_Column]],
-                       CDR3L = nchar(df[[CDR3_Column]]), stringsAsFactors = F)
-  #Clean IMGT format
+  #Create simple table made only of the most essential columns
+  clonal <- data.frame(CellId =        df[[ID_Column]],
+                       Vgene  =        df[[Vgene_Column]],
+                       Jgene  =        df[[Jgene_Column]],
+                       CDR3   =        df[[CDR3_Column]],
+                       CDR3L  =  nchar(df[[CDR3_Column]]), stringsAsFactors = F)
 
-  if(cell == "T"){
+  #Clean IMGT table format
+
+  if(Cell == "T"){
     clonal[["Vgene"]] <- str_extract(string = clonal[["Vgene"]], pattern = "(TR[AB]V[0-9]{1,3}[DN]{0,1}[-]{0,1}[0-9]{0,2})")
   }
 
-  if(cell == "B"){
+  if(Cell == "B"){
     clonal[["Vgene"]] <- str_extract(string = clonal[["Vgene"]], pattern = "(IG[HK]V[0-9]{1,3}[DN]{0,1}[-]{0,1}[0-9]{0,3})")
   }
 
-  if(cell == "T"){
+  if(Cell == "T"){
     clonal[["Jgene"]] <- str_extract(string = clonal[["Jgene"]], pattern = "(TR[AB]J[0-9]{1,3}[DN]{0,1}[-]{0,1}[0-9]{0,2})")
   }
 
-  if(cell == "B"){
+  if(Cell == "B"){
     clonal[["Jgene"]] <- str_extract(string = clonal[["Jgene"]], pattern = "(IG[HK]J[0-9]{1,3}[DN]{0,1}[-]{0,1}[0-9]{0,3})")
   }
 
@@ -82,10 +85,10 @@ clonality <- function (File = "example.xlsx",
   cdr3    <- clonal[["CDR3"]]
   l.cdr3  <- clonal[["CDR3L"]]
 
-#Creates unique ID for each cell
+#Creates unique ID for each Cell
   comp <-  paste(V.genes, J.genes, l.cdr3, sep = "_")
 
-#Detect identical sequences
+#Detect identical IDs
   index.true <- grep(TRUE, comp %in% comp[duplicated(comp)])
   pass <- as.list(c())
   V_J_L <- as.list(c())
@@ -117,7 +120,7 @@ clonality <- function (File = "example.xlsx",
   clonal[is.na(clonal$Clonality), ]$Clonality <- sprintf("U%s", seq(1, n))
 
   #Make the output as the original input or save a minimal version
-  if(output.orig == TRUE){
+  if(Output.orig == TRUE){
     clonal  <- full_join(df.import, clonal, by = setNames("CellId", ID_Column))
   }else{
     clonal <- clonal[gtools::mixedorder(clonal$Clonality),]
