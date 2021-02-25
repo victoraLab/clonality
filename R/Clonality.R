@@ -2,17 +2,16 @@
 #'
 #' Returns the input with an additional clonality column with clonal definitions.
 #'
-#' @param File Data frame or full path to a xlsx input containing TCR/BCR repertoire data.
-#' @param NewF The file output name.
-#' @param ID_Column The column containing an individual sequence ID.
-#' @param Vgene_Column The column name containing V gene names.
-#' @param Jgene_Column The column name containing J gene names.
-#' @param CDR3_Column The column name containing CDR3 sequences - nt or aa.
-#' @param Cell Choose between T for T Cell or B for B Cell.
-#' @param Pattern Use regular expression to detect the V/J Gene names.
-#' @param Rm.junc.na Remove rows with NA junctions. If `FALSE`, NA rows are considered unique sequences.
-#' @param Output.orig If `TRUE`, outputs the original input, if `FALSE` outputs a minimum table.
-#' @param Mismatch Percent of mismatches allowed in CDR3 before subsetting a group.
+#' @param File Data frame object or the full path to a xlsx input containing TCR/BCR repertoire data.
+#' @param NewF The file output name. Default: output.
+#' @param ID_Column The column containing an unique ID. Default: "Sequence_ID".
+#' @param Vgene_Column The column name containing V gene names. Default: "V_GENE_and_allele".
+#' @param Jgene_Column The column name containing J gene names. Default: "J_GENE_and_allele".
+#' @param CDR3_Column The column name containing CDR3 sequences - nt or aa. Default: "JUNCTION".
+#' @param Cell Choose between T for T Cell or B for B Cell. Default: "T".
+#' @param Rm.junc.na Remove rows with NA junctions. If `FALSE`, NA rows are considered unique sequences. Default: "TRUE".
+#' @param Output.orig If `TRUE`, outputs the original input. If `FALSE`, outputs a mini table. Default: "FALSE".
+#' @param Mismatch Percent of mismatches allowed in CDR3 before subsetting a group. Default: 0
 #' @examples
 #' clonality(File = tra)
 #' clonality(File = trb)
@@ -26,12 +25,11 @@
 
 clonality <- function (File = "example.xlsx",
                        NewF = "output",
-                       ID_Column = "Sequence ID",
-                       Vgene_Column = "V-GENE and allele",
-                       Jgene_Column = "J-GENE and allele",
+                       ID_Column = "Sequence_ID",
+                       Vgene_Column = "V_GENE_and_allele",
+                       Jgene_Column = "J_GENE_and_allele",
                        CDR3_Column = "JUNCTION",
                        Cell = "T",
-                       Pattern = NULL,
                        Rm.junc.na = TRUE,
                        Output.orig = FALSE,
                        Mismatch = 0)
@@ -101,7 +99,7 @@ clonality <- function (File = "example.xlsx",
     V_J_L[[i]] <- grep(unique(comp[index.true])[i], comp, value = T) #pass the list of clonal names to V_J_L
   }
 
-  clonal$Clonality <- NA #create a new column for clonal
+  clonal$Clonality <- NA #create a new column for the result
 
   pass <- pass[order(unlist(lapply(lapply(pass, as.matrix), nrow)))] #order
   V_J_L <- V_J_L[order(unlist(lapply(V_J_L, length)))] #order

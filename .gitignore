@@ -5,6 +5,12 @@
 # Session Data files
 .RData
 
+# Mac Stuff
+ .DS_Store
+
+ #xlsx files
+ *.xlsx
+
 # User-specific files
 .Ruserdata
 
