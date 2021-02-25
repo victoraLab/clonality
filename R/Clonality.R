@@ -51,7 +51,7 @@ clonality <- function (File = "example.xlsx",
   if(Rm.junc.na == TRUE){
     df <- df.import[!is.na(df.import[[CDR3_Column]]),]
   }
-  else{
+  if(Rm.junc.na == FALSE){
     df <- df.import
   }
 
