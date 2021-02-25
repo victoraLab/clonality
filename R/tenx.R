@@ -9,6 +9,9 @@
 #' clonality(File = tra)
 
 #' @import tidyverse
+#' @import dplyr
+#' @importFrom tidyr pivot_wider
+#' @importFrom plyr rbind.fill
 
 #' @export
 
@@ -17,7 +20,7 @@ tenx <- function (File = "example.xlsx",
                   method = "unique_paired"){
 
 #Here we  split the 10x dataframe based on each barcode.
-File.list <- split( File , f = bar)
+File.list <- split( File , f = File[["barcode"]])
 
 #This function sorts every barcode table for the chain, to align every cell chains.
 sort.list <- function(x){
@@ -63,15 +66,16 @@ if(method == "unique_paired"){
     mutate_at(vars(matches("bar")), as.character) %>%
     mutate(sc.barcodes = coalesce(!!! select(., matches("bar"))))
 
-  library(tidyverse)
   res <- res %>% select(-contains("raw_clonotype_id"))
   res <- res %>% select(-contains("barcode_"))
 
   clonality(File = res,
             Vgene_Column = "v_gene_IGH",
             Jgene_Column = "j_gene_IGH",
-            CDR3_Column = "cdr3_nt",
+            CDR3_Column = "cdr3_nt_IGH",
             Cell = "B",
+            Rm.junc.na = F,
+            Output.orig = T,
             ID_Column = "sc.barcodes"
             )
 

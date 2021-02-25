@@ -51,6 +51,9 @@ clonality <- function (File = "example.xlsx",
   if(Rm.junc.na == TRUE){
     df <- df.import[!is.na(df.import[[CDR3_Column]]),]
   }
+  else{
+    df <- df.import
+  }
 
   #Create simple table made only of the most essential columns
   clonal <- data.frame(CellId =        df[[ID_Column]],
