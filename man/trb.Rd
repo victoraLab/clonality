@@ -7,13 +7,13 @@
 \format{
 A data frame with 49 rows and 9 variables:
 \describe{
-\item{Sequence number}{Sequence number, not needed}
-\item{Sequence ID}{Unique sequence ID, needed}
-\item{V-DOMAIN Functionality}{If the V sequence are functional, not needed}
-\item{V-GENE and allele}{V gene name, needed}
-\item{J-GENE and allele}{J gene name, needed}
-\item{D-GENE and allele}{D gene name, not needed}
-\item{JUNCTION frame}{If CDR3 junction is in-frame, not needed}
+\item{Sequence_number}{Sequence number, not needed}
+\item{Sequence_ID}{Unique sequence ID, needed}
+\item{V_DOMAIN_Functionality}{If the V sequence are functional, not needed}
+\item{V_GENE_and_allele}{V gene name, needed}
+\item{J_GENE_and_allele}{J gene name, needed}
+\item{D_GENE_and_allele}{D gene name, not needed}
+\item{JUNCTION_frame}{If CDR3 junction is in-frame, not needed}
 \item{JUNCTION}{Junction sequence}
 \item{sequence}{Full TCR sequence}
 ...

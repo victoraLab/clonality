@@ -7,36 +7,36 @@
 clonality(
   File = "example.xlsx",
   NewF = "output",
-  ID_Column = "Sequence ID",
-  Vgene_Column = "V-GENE and allele",
-  Jgene_Column = "J-GENE and allele",
+  ID_Column = "Sequence_ID",
+  Vgene_Column = "V_GENE_and_allele",
+  Jgene_Column = "J_GENE_and_allele",
   CDR3_Column = "JUNCTION",
-  cell = "T",
-  rm.junc.na = TRUE,
-  output.orig = FALSE,
+  Cell = "T",
+  Rm.junc.na = TRUE,
+  Output.orig = FALSE,
   Mismatch = 0
 )
 }
 \arguments{
-\item{File}{Data frame or full path to a xlsx input containing TCR/BCR repertoire data.}
+\item{File}{Data frame object or the full path to a xlsx input containing TCR/BCR repertoire data.}
 
-\item{NewF}{The file output name.}
+\item{NewF}{The file output name. Default: output.}
 
-\item{ID_Column}{The column containing an individual sequence ID.}
+\item{ID_Column}{The column containing an unique ID. Default: "Sequence_ID".}
 
-\item{Vgene_Column}{The column name containing V gene names.}
+\item{Vgene_Column}{The column name containing V gene names. Default: "V_GENE_and_allele".}
 
-\item{Jgene_Column}{The column name containing J gene names.}
+\item{Jgene_Column}{The column name containing J gene names. Default: "J_GENE_and_allele".}
 
-\item{CDR3_Column}{The column name containing CDR3 sequences - nt or aa.}
+\item{CDR3_Column}{The column name containing CDR3 sequences - nt or aa. Default: "JUNCTION".}
 
-\item{cell}{Choose between T for T cell or B for Bcell.}
+\item{Cell}{Choose between T for T Cell or B for B Cell. Default: "T".}
 
-\item{rm.junc.na}{Remove rows with NA junctions. If \code{FALSE}, NA rows are considered unique sequences.}
+\item{Rm.junc.na}{Remove rows with NA junctions. If \code{FALSE}, NA rows are considered unique sequences. Default: "TRUE".}
 
-\item{output.orig}{If \code{TRUE}, outputs the original input, if \code{FALSE} outputs a minimum table.}
+\item{Output.orig}{If \code{TRUE}, outputs the original input. If \code{FALSE}, outputs a mini table. Default: "FALSE".}
 
-\item{Mismatch}{Percent of mismatches allowed in CDR3 before subsetting a group.}
+\item{Mismatch}{Percent of mismatches allowed in CDR3 before subsetting a group. Default: 0}
 }
 \description{
 Returns the input with an additional clonality column with clonal definitions.

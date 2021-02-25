@@ -9,7 +9,7 @@
  .DS_Store
 
  #xlsx files
- *.xlsx
+ /*.xlsx/
 
 # User-specific files
 .Ruserdata
