@@ -5,9 +5,9 @@
 #' @param data Data frame object or the full path to a filtered_contig_annotations.csv input.
 #' @param method One of: unique_paired, unique_all, sticky_ends. Default: unique_paired. Character.
 #' @param only_productive Filter non productive chains. Logical.
-#' @param classes Types of chains to be annotated. Character.
+
 #' @param clonality_input Input parameters for the clonality function. List.
-#' @param pairing Character. _ for sticky_ends only.
+
 #' @examples
 #' clonality(data = filtered_contig_annotations)
 #' @import tidyverse
@@ -17,7 +17,7 @@
 #' @importFrom data.table rbindlist
 #' @export
 
-tenx <- function(data = NULL, method = "unique_paired", only_productive = T, clonality_input = NULL, cell = "T", classes = "all", pairing = "_", save.files = F) {
+tenx <- function(data = NULL, method = "unique_paired", only_productive = T, clonality_input = NULL, cell = "T",  pairing = "_", save.files = F) {
 
     if( !any(method %in% c("unique_paired", "sticky_ends", "unique_all")) ) stop('Method chosen not valid. Choose one of: unique_paired, sticky_ends, unique_all.')
 
@@ -59,20 +59,21 @@ tenx <- function(data = NULL, method = "unique_paired", only_productive = T, clo
     }
     #
 
-    if(classes == "all"){
 
-        classes <- unique(list.pairs = list.pairs, names(list.pairs))
-
-    }
-    else{
-
-        classes <- classes
-
-    }
+    # if(classes == "all"){
+    #
+    #   classes <- unique(list.pairs = list.pairs, names(list.pairs))
+    #
+    # }
+    # else{
+    #
+    #   classes <- classes
+    #
+    # }
 
     if (method == "unique_paired") {
 
-        unique_paired(list.pairs = list.pairs, classes = classes, clonality_input = clonality_input)
+        unique_paired(list.pairs = list.pairs, clonality_input = clonality_input, cell = cell)
 
     }
 
@@ -84,7 +85,7 @@ tenx <- function(data = NULL, method = "unique_paired", only_productive = T, clo
 
     else if (method == "sticky_ends") {
 
-        sticky_ends(list.pairs = list.pairs, classes = classes, pairing = pairing, clonality_input = clonality_input)
+        sticky_ends(list.pairs = list.pairs, clonality_input = clonality_input)
 
     }
 
