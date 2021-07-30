@@ -1,24 +1,25 @@
-#' Define clonality for 10x genomics
-#'
-#' Assign clonality on 10x VDJ filtered contigs using sticky_ends method
-#'
-#' @param list.pairs
-#' @param classes
-#' @param pairing
-#' @param clonality_input
-#'
+
 #' @export
 
 sticky_ends <- function(list.pairs = list.pairs, classes = NULL, pairing = "_", clonality_input = clonality_input){
 
+  BCell.classes   <- c("IGH", "IGK", "IGL", "IGH_IGH", "IGH_IGK", "IGH_IGL", "IGK_IGK", "IGL_IGL", "IGH_IGK_IGK", "IGH_IGL_IGL", "IGH_IGK_IGL", "IGH_IGH_IGK", "IGH_IGH_IGL",  "IGH_IGH_IGK_IGK")
+  TabCell.classes <- c("TRA", "TRB", "TRA_TRB", "TRA_TRA", "TRB_TRB", "TRA_TRA_TRB", "TRA_TRB_TRB", "TRA_TRA_TRB_TRB")
+  TgdCell.classes <- c("TRD", "TRG", "TRD_TRG", "TRD_TRD", "TRG_TRG", "TRD_TRD_TRG", "TRD_TRG_TRG", "TRD_TRD_TRG_TRG")
 
-  if(pairing == "_"){
-    classes <- classes[classes %in% c("TRA", "TRB", "TRA_TRB")]
+  if(cell == "B"){
+    classes <- BCell.classes
+    cdr3.match <- "cdr3_IG"
+  }
+  if(cell == "T"){
+    classes <- TabCell.classes
+    cdr3.match <- "cdr3_TR"
+  }
+  if(cell == "Tgd"){
+    classes <- TgdCell.classes
+    cdr3.match <- "cdr3_TR"
   }
 
-  else if(pairing == "__"){
-    classes <- classes[classes %in% c("TRA", "TRB", "TRA_TRB", "TRA_TRA", "TRB_TRB", "TRA_TRA_TRB_TRB")]
-  }
 
   list.pairs_filt <- list.pairs[names(list.pairs) %in% classes]
 

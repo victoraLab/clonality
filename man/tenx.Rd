@@ -2,7 +2,7 @@
 % Please edit documentation in R/tenx.R
 \name{tenx}
 \alias{tenx}
-\title{Define tenx}
+\title{Define 10x genomics clonotypes}
 \usage{
 tenx(
   data = NULL,
@@ -10,27 +10,22 @@ tenx(
   only_productive = T,
   clonality_input = NULL,
   cell = "T",
-  classes = "all",
   pairing = "_",
   save.files = F
 )
 }
 \arguments{
-\item{data}{Data frame object or the full path to a xlsx input containing TCR/BCR repertoire data.}
+\item{data}{Data frame object or the full path to a filtered_contig_annotations.csv input.}
 
-\item{method}{One of: unique_paired, unique_all, sticky_ends. Default: unique_paired.}
+\item{method}{One of: unique_paired, unique_all, sticky_ends. Default: unique_paired. Character.}
 
-\item{only_productive}{Logical.}
+\item{only_productive}{Filter non productive chains. Logical.}
 
-\item{clonality_input}{clonality input parameters. List.}
-
-\item{classes}{Types of chains to be annotated. Character.}
-
-\item{pairing}{Character. _ for sticky_ends only.}
+\item{clonality_input}{Input parameters for the clonality function. List.}
 }
 \description{
 Returns the input with an additional clonality column with clonal definitions.
 }
 \examples{
-clonality(data = tra)
+clonality(data = filtered_contig_annotations)
 }

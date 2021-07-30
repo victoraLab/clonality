@@ -1,76 +1,91 @@
 #' @export
 #'
-unique_paired <- function(list.pairs = list.pairs, classes = NULL, clonality_input = clonality_input){
+unique_paired <- function(list.pairs = list.pairs, clonality_input = clonality_input, cell = cell){
 
-    classes <- grep(classes, pattern = "[TRIG]{2}[A]_[TRIG]{2}[B]", value = T)
+  BCell.classes   <- c("IGH_IGH", "IGH_IGK", "IGH_IGL", "IGK_IGK", "IGL_IGL", "IGH_IGK_IGK", "IGH_IGL_IGL", "IGH_IGK_IGL", "IGH_IGH_IGK", "IGH_IGH_IGL",  "IGH_IGH_IGK_IGK")
+  TabCell.classes <- c("TRA_TRB", "TRA_TRA", "TRB_TRB", "TRA_TRA_TRB", "TRA_TRB_TRB", "TRA_TRA_TRB_TRB")
+  TgdCell.classes <- c("TRD_TRG", "TRD_TRD", "TRG_TRG", "TRD_TRD_TRG", "TRD_TRG_TRG", "TRD_TRD_TRG_TRG")
 
-    list.pairs_filt <- list.pairs[names(list.pairs) %in% classes]
-
-    res <- do.call(c, list.pairs_filt)
-    res <- lapply(res, row1)
-    res <- bind_rows(res, .id = "classes")
-
-    res$classes <- gsub("\\..*", "", res$classes)
-
-    res <- res %>% mutate_at(vars(matches("raw")), as.character) %>% mutate(sc.raw_clonotypes = coalesce(!!!select(., matches("raw"))))
-    res <- res %>% mutate_at(vars(matches("bar")), as.character) %>% mutate(sc.barcodes = coalesce(!!!select(., matches("bar"))))
-
-    res <- res %>% select(-contains("raw_clonotype_id"))
-    res <- res %>% select(-contains("barcode_"))
-
-    #res <- res %>% group_by(classes) %>% filter(n() > classes_n)
-
-    #to remove columns with all rows = NA
-    all_na <- function(x) any(!is.na(x))
-
-    for (i in unique(res$classes)) {
-
-      res.sub <- res %>% filter(classes == i)
-      barcodes <- res.sub$sc.barcodes
-      raw_clonotypes <- res.sub$sc.raw_clonotypes
-      res.sub <- res.sub[,order(colnames(res.sub))]
-      res.sub <- res.sub %>% select_if(all_na)
-
-      v_gene <- res.sub %>% ungroup() %>% select(starts_with("v_gene")) %>% tidyr::unite("v_gene", sep = "_") %>% pull(v_gene)
-      j_gene <- res.sub %>% ungroup() %>% select(starts_with("j_gene")) %>% tidyr::unite("j_gene", sep = "_") %>% pull(j_gene)
-      cdr3_col <- res.sub %>% ungroup() %>% select(starts_with("cdr3_nt")) %>% tidyr::unite("cdr3_nt", sep = "_") %>% pull(cdr3_nt)
-      cdr3_col2 <- res.sub %>% ungroup() %>% select(matches("cdr3_TR")) %>% tidyr::unite("cdr3", sep = "_") %>% pull(cdr3)
-      cdr3_length <- as.data.frame(apply(res.sub %>% ungroup() %>% select(starts_with("cdr3_nt")), MARGIN = 2, FUN = nchar)) %>% tidyr::unite("cdr3_length", sep = "_") %>% pull(cdr3_length)
+  if(cell == "B"){
+    classes <- BCell.classes
+    cdr3.match <- "cdr3_IG"
+  }
+  if(cell == "T"){
+    classes <- TabCell.classes
+    cdr3.match <- "cdr3_TR"
+  }
+  if(cell == "Tgd"){
+    classes <- TgdCell.classes
+    cdr3.match <- "cdr3_TR"
+  }
 
 
-      df1 <- data.frame(barcodes = barcodes, v_genes = v_gene,  j_genes = j_gene, CDR3 = cdr3_col,
-                        cdr3_col2 = cdr3_col2, cdr3_length = cdr3_length, raw_clonotypes = raw_clonotypes)
+  list.pairs_filt <- list.pairs[names(list.pairs) %in% classes]
 
-      df1$v_genes <- gsub("\\+",";",df1$v_genes)
-      df1$j_genes <- gsub("\\+",";",df1$j_genes)
+  res <- do.call(c, list.pairs_filt)
+  res <- lapply(res, row1)
+  res <- bind_rows(res, .id = "classes")
 
-      if(length(clonality_input) == 0){
-        clonality_input <- c(output = "Clonal.output.10x", vgene_col = "v_genes", jgene_col = "j_genes", cdr3_col = "CDR3",
-                             cell = "T", output_original = T,  id_col = "barcodes", mm = 0, search_gname = F)
-      }
+  res$classes <- gsub("\\..*", "", res$classes)
 
-      else{
+  res <- res %>% mutate_at(vars(matches("raw")), as.character) %>% mutate(sc.raw_clonotypes = coalesce(!!!select(., matches("raw"))))
+  res <- res %>% mutate_at(vars(matches("bar")), as.character) %>% mutate(sc.barcodes = coalesce(!!!select(., matches("bar"))))
 
-        input <- c(output = "Clonal.output.10x", vgene_col = "v_genes", jgene_col = "j_genes", cdr3_col = "CDR3",
-                   cell = "T", output_original = T,  id_col = "barcodes", mm = 0, search_gname = F)
+  res <- res %>% select(-contains("raw_clonotype_id"))
+  res <- res %>% select(-contains("barcode_"))
 
-        input[names(clonality_input)] <- clonality_input
+  #res <- res %>% group_by(classes) %>% filter(n() > classes_n)
 
-        clonality_input <- input
-      }
+  #to remove columns with all rows = NA
+  all_na <- function(x) any(!is.na(x))
+
+  for (i in unique(res$classes)) {
+
+    res.sub <- res %>% filter(classes == i)
+    barcodes <- res.sub$sc.barcodes
+    raw_clonotypes <- res.sub$sc.raw_clonotypes
+    res.sub <- res.sub[,order(colnames(res.sub))]
+    res.sub <- res.sub %>% select_if(all_na)
+
+    v_gene <- res.sub %>% ungroup() %>% select(starts_with("v_gene")) %>% tidyr::unite("v_gene", sep = "_") %>% pull(v_gene)
+    j_gene <- res.sub %>% ungroup() %>% select(starts_with("j_gene")) %>% tidyr::unite("j_gene", sep = "_") %>% pull(j_gene)
+    cdr3_col <- res.sub %>% ungroup() %>% select(starts_with("cdr3_nt")) %>% tidyr::unite("cdr3_nt", sep = "_") %>% pull(cdr3_nt)
+    cdr3_col2 <- res.sub %>% ungroup() %>% select(matches(cdr3.match)) %>% tidyr::unite("cdr3", sep = "_") %>% pull(cdr3)
+    cdr3_length <- as.data.frame(apply(res.sub %>% ungroup() %>% select(starts_with("cdr3_nt")), MARGIN = 2, FUN = nchar)) %>% tidyr::unite("cdr3_length", sep = "_") %>% pull(cdr3_length)
 
 
-clonality(data = df1,
-                output = paste0(clonality_input["output"], i),
-                vgene_col = clonality_input["vgene_col"],
-                jgene_col = clonality_input["jgene_col"],
-                cdr3_col = clonality_input["cdr3_col"],
-                cell = clonality_input["cell"],
-                output_original = as.logical(clonality_input["output_original"]),
-                suffix = i,
-                id_col = clonality_input["id_col"],
-                mm = as.numeric(clonality_input["mm"]),
-                search_gname = as.logical(clonality_input["search_gname"]))
-      }
+    df1 <- data.frame(barcodes = barcodes, v_genes = v_gene,  j_genes = j_gene, CDR3 = cdr3_col,
+                      cdr3_col2 = cdr3_col2, cdr3_length = cdr3_length, raw_clonotypes = raw_clonotypes)
+
+    df1$v_genes <- gsub("\\+",";",df1$v_genes)
+    df1$j_genes <- gsub("\\+",";",df1$j_genes)
+
+    if(length(clonality_input) == 0){
+      clonality_input <- c(output = "Clonal.output.10x", vgene_col = "v_genes", jgene_col = "j_genes", cdr3_col = "CDR3",
+                           cell = "T", output_original = T,  id_col = "barcodes", mm = 0, search_gname = F)
+    }
+
+    else{
+
+      input <- c(output = "Clonal.output.10x", vgene_col = "v_genes", jgene_col = "j_genes", cdr3_col = "CDR3",
+                 cell = "T", output_original = T,  id_col = "barcodes", mm = 0, search_gname = F)
+
+      input[names(clonality_input)] <- clonality_input
+
+      clonality_input <- input
+    }
+
+    clonality(data = df1,
+              output = paste0(clonality_input["output"], i),
+              vgene_col = clonality_input["vgene_col"],
+              jgene_col = clonality_input["jgene_col"],
+              cdr3_col = clonality_input["cdr3_col"],
+              cell = clonality_input["cell"],
+              output_original = as.logical(clonality_input["output_original"]),
+              suffix = i,
+              id_col = clonality_input["id_col"],
+              mm = as.numeric(clonality_input["mm"]),
+              search_gname = as.logical(clonality_input["search_gname"]))
+  }
 
 }
