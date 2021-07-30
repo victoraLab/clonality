@@ -37,3 +37,28 @@
 #' }
 #'
 "tra"
+
+#' A 10x genomics TCR sequencing dataset.
+#'
+#' A dataset containing TCR Alpha and Beta sequences from 10x genomics-generated single cells.
+#'
+#' @format A data frame with 49 rows and 9 variables:
+#' \describe{
+#'   \item{barcode}{Unique barcode sequences to indentify single cells}
+#'   \item{contig_id}{Unique ID for contig assemble per single cell}
+#'   \item{length}{chain length in bp}
+#'   \item{chain}{The TCR chain name}
+#'   \item{v_gene}{The V-gene name}
+#'   \item{d_gene}{The D-gene name}
+#'   \item{j_gene}{The J-gene name}
+#'   \item{c_gene}{The constant gene name}
+#'   \item{productive}{If the TCR sequence is productive}
+#'   \item{cdr3}{The amino acid sequence of the CDR3}
+#'   \item{cdr3_nt}{The nucleotide sequence of the CDR3}
+#'   \item{reads}{The read sequence number for each barcode}
+#'   \item{umis}{The number of umis for each cell}
+#'   \item{raw_clonotype_id}{The clonotype id designated to each cell by the 10x genomics protocol}
+#'   ...
+#' }
+#'
+"filtered_contig_annotations"

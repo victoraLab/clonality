@@ -2,98 +2,89 @@
 #'
 #' Returns the input with an additional clonality column with clonal definitions.
 #'
-#' @param File Data frame object or the full path to a xlsx input containing TCR/BCR repertoire data.
+#' @param data Data frame object or the full path to a xlsx input containing TCR/BCR repertoire data.
 #' @param method One of: unique_paired, unique_all, sticky_ends. Default: unique_paired.
-
+#' @param only_productive Logical.
+#' @param classes Types of chains to be annotated. Character.
+#' @param clonality_input clonality input parameters. List.
+#' @param pairing Character. _ for sticky_ends only.
 #' @examples
-#' clonality(File = tra)
-
+#' clonality(data = tra)
 #' @import tidyverse
 #' @import dplyr
-#' @importFrom tidyr pivot_wider
-#' @importFrom plyr rbind.fill
-
+#' @importFrom tidyr unite
+#' @importFrom stringr str_split_fixed
+#' @importFrom data.table rbindlist
 #' @export
 
+tenx <- function(data = NULL, method = "unique_paired", only_productive = T, clonality_input = NULL, cell = "T", classes = "all", pairing = "_", save.files = F) {
 
-tenx <- function (File = "example.xlsx",
-                  method = "unique_paired"){
+    if( !any(method %in% c("unique_paired", "sticky_ends", "unique_all")) ) stop('Method chosen not valid. Choose one of: unique_paired, sticky_ends, unique_all.')
 
-#Here we  split the 10x dataframe based on each barcode.
-File.list <- split( File , f = File[["barcode"]])
+    if(is.null(data) == T ){
+        data <- filtered_contig_annotations
+    }
 
-#This function sorts every barcode table for the chain, to align every cell chains.
-sort.list <- function(x){
-  return(x[order(x[["chain"]]),])
-  }
+    if(is.character(data) == T){
+        data <- read.csv(data)
+    }
 
-#This function creates a tag with the paired type for each cell barcode
-group.chains <- function(x){
-  paste(x[["chain"]], collapse = "_")
-}
+    if(only_productive == T){
+        data <- data %>% filter(productive == "True")
+    }
 
-row1 <- function(x){
-  x <- x %>% select(c(v_gene, j_gene, cdr3, cdr3_nt, raw_clonotype_id, chain, barcode))
-  x[["chain"]] <- make.unique(x[["chain"]])
-  x[["barcode"]] <- make.unique(x[["barcode"]])
-  x %>% mutate(rn = 1) %>% pivot_wider(names_from = 'chain', values_from = c(v_gene, j_gene, cdr3, cdr3_nt, raw_clonotype_id, barcode)) %>% select(-rn)
-}
+    # Split the 10x dataframe based on each barcode.
+    data.list <- split(data, f = data[["barcode"]])
 
+    # Sorts every barcode table for the chain, to align every cell chains.
+    sort.list <- function(x) {
+        return(x[order(x[["chain"]]), ])
+    }
 
-#We apply sort.list function into our input
-File.list <- lapply(File.list, sort.list)
-#Create the pair tag
-pairs <- data.frame(Chains = unlist(lapply(File.list, group.chains)))
-
-list.pairs <- list()
-for(i in unique(pairs)[["Chains"]]){
-  list.pairs[[i]] <- File.list[pairs[["Chains"]] == i]
-}
-#
-
-if(method == "unique_paired"){
-
-  list.pairs <- list.pairs[grep("_", names(list.pairs))]
-  res <- do.call(c, list.pairs)
-  res <- lapply(res, row1)
-  res <- rbind.fill(res)
-
-  res <- res %>%
-    mutate_at(vars(matches("raw")), as.character) %>%
-    mutate(sc.raw_clonotypes = coalesce(!!! select(., matches("raw"))))
-
-  res <- res %>%
-    mutate_at(vars(matches("bar")), as.character) %>%
-    mutate(sc.barcodes = coalesce(!!! select(., matches("bar"))))
-
-  res <- res %>% select(-contains("raw_clonotype_id"))
-  res <- res %>% select(-contains("barcode_"))
-
-  clonality(File = res,
-            Vgene_Column = "v_gene_IGH",
-            Jgene_Column = "j_gene_IGH",
-            CDR3_Column = "cdr3_nt_IGH",
-            Cell = "B",
-            Rm.junc.na = F,
-            Output.orig = T,
-            ID_Column = "sc.barcodes"
-            )
+    # Creates a tag with the paired type for each cell barcode
+    group.chains <- function(x) {
+        paste(x[["chain"]], collapse = "_")
+    }
 
 
- }
+    # We apply sort.list function
+    data.list <- lapply(data.list, sort.list)
 
-if(method == "unique_all"){
+    # Create the pair tag
+    pairs <- data.frame(Chains = unlist(lapply(data.list, group.chains)))
 
+    list.pairs <- list()
+    for (i in unique(pairs)[["Chains"]]) {
+        list.pairs[[i]] <- data.list[pairs[["Chains"]] == i]
+    }
+    #
 
-}
-
-if(method == "sticky_ends"){
-
-}
+    if(classes == "all"){
+        classes <- unique(list.pairs = list.pairs, names(list.pairs))
+        }
+    else{
+        classes <- classes
+        }
 
 
 
+    if (method == "unique_paired") {
 
+        unique_paired(list.pairs = list.pairs, classes = classes, clonality_input = clonality_input)
+
+        }
+
+    else if (method == "unique_all") {
+
+        unique_all()
+
+        }
+
+    else if (method == "sticky_ends") {
+
+        sticky_ends(list.pairs = list.pairs, classes = classes, pairing = pairing, clonality_input = clonality_input)
+
+    }
 
 
 

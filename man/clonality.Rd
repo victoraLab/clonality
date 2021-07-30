@@ -5,44 +5,46 @@
 \title{Define clonality}
 \usage{
 clonality(
-  File = "example.xlsx",
-  NewF = "output",
-  ID_Column = "Sequence_ID",
-  Vgene_Column = "V_GENE_and_allele",
-  Jgene_Column = "J_GENE_and_allele",
-  CDR3_Column = "JUNCTION",
-  Cell = "T",
-  Rm.junc.na = TRUE,
-  Output.orig = FALSE,
-  Mismatch = 0
+  data = "example.xlsx",
+  output = "output",
+  id_col = "Sequence_ID",
+  vgene_col = "V_GENE_and_allele",
+  jgene_col = "J_GENE_and_allele",
+  cdr3_col = "JUNCTION",
+  cell = "T",
+  rm.na = TRUE,
+  output_original = FALSE,
+  mm = 0,
+  suffix = NULL,
+  search_gname = T
 )
 }
 \arguments{
-\item{File}{Data frame object or the full path to a xlsx input containing TCR/BCR repertoire data.}
+\item{data}{Data frame object or the full path to a xlsx with rep data.}
 
-\item{NewF}{The file output name. Default: output.}
+\item{output}{The data output name. Default: output.}
 
-\item{ID_Column}{The column containing an unique ID. Default: "Sequence_ID".}
+\item{id_col}{The column with an unique ID. Default: 'Sequence_ID'.}
 
-\item{Vgene_Column}{The column name containing V gene names. Default: "V_GENE_and_allele".}
+\item{vgene_col}{The column with V gene names. Default: 'V_GENE_and_allele'.}
 
-\item{Jgene_Column}{The column name containing J gene names. Default: "J_GENE_and_allele".}
+\item{jgene_col}{The column with J gene names. Default: 'J_GENE_and_allele'.}
 
-\item{CDR3_Column}{The column name containing CDR3 sequences - nt or aa. Default: "JUNCTION".}
+\item{cdr3_col}{The column with CDR3 sequences - nt/aa. Default: 'JUNCTION'.}
 
-\item{Cell}{Choose between T for T Cell or B for B Cell. Default: "T".}
+\item{cell}{Choose between T for T cell or B for B cell. Default: 'T'.}
 
-\item{Rm.junc.na}{Remove rows with NA junctions. If \code{FALSE}, NA rows are considered unique sequences. Default: "TRUE".}
+\item{rm.na}{Remove NA junctions. If \code{FALSE}, set to unique. Default: 'TRUE'.}
 
-\item{Output.orig}{If \code{TRUE}, outputs the original input. If \code{FALSE}, outputs a mini table. Default: "FALSE".}
+\item{output_original}{If \code{TRUE}, output = input with extra clonality column. Default: 'FALSE'.}
 
-\item{Mismatch}{Percent of mismatches allowed in CDR3 before subsetting a group. Default: 0}
+\item{mm}{Percent of mismatches allowed in subgroups. Default: 0}
 }
 \description{
-Returns the input with an additional clonality column with clonal definitions.
+Returns table with clonality definitions.
 }
 \examples{
-clonality(File = tra)
-clonality(File = trb)
-clonality(File = "example.xlsx")
+clonality(data = tra)
+clonality(data = trb)
+clonality(data = 'example.xlsx')
 }

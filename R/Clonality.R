@@ -1,140 +1,180 @@
 #' Define clonality
 #'
-#' Returns the input with an additional clonality column with clonal definitions.
+#' Returns table with clonality definitions.
 #'
-#' @param File Data frame object or the full path to a xlsx input containing TCR/BCR repertoire data.
-#' @param NewF The file output name. Default: output.
-#' @param ID_Column The column containing an unique ID. Default: "Sequence_ID".
-#' @param Vgene_Column The column name containing V gene names. Default: "V_GENE_and_allele".
-#' @param Jgene_Column The column name containing J gene names. Default: "J_GENE_and_allele".
-#' @param CDR3_Column The column name containing CDR3 sequences - nt or aa. Default: "JUNCTION".
-#' @param Cell Choose between T for T Cell or B for B Cell. Default: "T".
-#' @param Rm.junc.na Remove rows with NA junctions. If `FALSE`, NA rows are considered unique sequences. Default: "TRUE".
-#' @param Output.orig If `TRUE`, outputs the original input. If `FALSE`, outputs a mini table. Default: "FALSE".
-#' @param Mismatch Percent of mismatches allowed in CDR3 before subsetting a group. Default: 0
+#' @param data Data frame object or the full path to a xlsx with rep data.
+#' @param output The data output name. Default: output.
+#' @param id_col The column with an unique ID. Default: 'Sequence_ID'.
+#' @param vgene_col The column with V gene names. Default: 'V_GENE_and_allele'.
+#' @param jgene_col The column with J gene names. Default: 'J_GENE_and_allele'.
+#' @param cdr3_col The column with CDR3 sequences - nt/aa. Default: 'JUNCTION'.
+#' @param cell Choose between T for T cell or B for B cell. Default: 'T'.
+#' @param rm.na Remove NA junctions. If `FALSE`, set to unique. Default: 'TRUE'.
+#' @param output_original If `TRUE`, output = input with extra clonality column. Default: 'FALSE'.
+#' @param mm Percent of mismatches allowed in subgroups. Default: 0
 #' @examples
-#' clonality(File = tra)
-#' clonality(File = trb)
-#' clonality(File = "example.xlsx")
+#' clonality(data = tra)
+#' clonality(data = trb)
+#' clonality(data = 'example.xlsx')
 #' @importFrom stringdist stringdistmatrix
 #' @importFrom readxl read_excel
 #' @importFrom stringr str_extract
-#' @importFrom dplyr full_join
+#' @importFrom safejoin safe_full_join
 #' @importFrom gtools mixedorder
 #' @export
 
-clonality <- function (File = "example.xlsx",
-                       NewF = "output",
-                       ID_Column = "Sequence_ID",
-                       Vgene_Column = "V_GENE_and_allele",
-                       Jgene_Column = "J_GENE_and_allele",
-                       CDR3_Column = "JUNCTION",
-                       Cell = "T",
-                       Rm.junc.na = TRUE,
-                       Output.orig = FALSE,
-                       Mismatch = 0)
+clonality <- function(data = "example.xlsx",
+                      output = "output",
+                      id_col = "Sequence_ID",
+                      vgene_col = "V_GENE_and_allele",
+                      jgene_col = "J_GENE_and_allele",
+                      cdr3_col = "JUNCTION",
+                      cell = "T",
+                      rm.na = TRUE,
+                      output_original = FALSE,
+                      mm = 0,
+                      suffix = NULL,
+                      search_gname = T) {
 
 
-{
+    # Read data.frame/input xlsx table.
 
-
-#Read data.frame/input xlsx table.
-  if(class(File)[1] != "character"){
-    df.import <- File
-  }
-  else{
-    df.import <- read_excel(File)
+    if (class(data)[1] != "character") {
+        df_import <- data
+    } else {
+        df_import <- read_excel(data)
     }
 
-# if Rm.junc.na is TRUE, remove all NA junctions prior to running
+    # If rm.na is TRUE, remove all NA junctions prior to running
 
-  if(Rm.junc.na == TRUE){
-    df <- df.import[!is.na(df.import[[CDR3_Column]]),]
-  }
-  if(Rm.junc.na == FALSE){
-    df <- df.import
-  }
+    if (rm.na == TRUE) {
+        df <- df_import[!is.na(df_import[[cdr3_col]]), ]
+    } else {
+        df <- df_import
+    }
 
-  #Create simple table made only of the most essential columns
-  clonal <- data.frame(CellId =        df[[ID_Column]],
-                       Vgene  =        df[[Vgene_Column]],
-                       Jgene  =        df[[Jgene_Column]],
-                       CDR3   =        df[[CDR3_Column]],
-                       CDR3L  =  nchar(df[[CDR3_Column]]), stringsAsFactors = F)
+    # Create a simple table
 
-  #Clean IMGT table format
+    clonal_tab <- data.frame(CellId = df[[id_col]],
+                             v_genes = df[[vgene_col]],
+                             j_genes = df[[jgene_col]],
+                             CDR3 = df[[cdr3_col]],
+                             CDR3L = nchar(df[[cdr3_col]]),
+                             stringsAsFactors = F)
 
-  if(Cell == "T"){
-    clonal[["Vgene"]] <- str_extract(string = clonal[["Vgene"]], pattern = "(TR[AB]V[0-9]{1,3}[DN]{0,1}[-]{0,1}[0-9]{0,2})")
-  }
+    # Clean IMGT table format
 
-  if(Cell == "B"){
-    clonal[["Vgene"]] <- str_extract(string = clonal[["Vgene"]], pattern = "(IG[HK]V[0-9]{1,3}[DN]{0,1}[-]{0,1}[0-9]{0,3})")
-  }
+    if (search_gname == T) {
 
-  if(Cell == "T"){
-    clonal[["Jgene"]] <- str_extract(string = clonal[["Jgene"]], pattern = "(TR[AB]J[0-9]{1,3}[DN]{0,1}[-]{0,1}[0-9]{0,2})")
-  }
+        if (cell == "T") {
+            clonal_tab[["v_genes"]] <- str_extract(string = clonal_tab[["v_genes"]], pattern = "TR[AB]V.*?(?=\\*|\\/)")
+        }
 
-  if(Cell == "B"){
-    clonal[["Jgene"]] <- str_extract(string = clonal[["Jgene"]], pattern = "(IG[HK]J[0-9]{1,3}[DN]{0,1}[-]{0,1}[0-9]{0,3})")
-  }
+        if (cell == "B") {
+            clonal_tab[["v_genes"]] <- str_extract(string = clonal_tab[["v_genes"]], pattern = "IG[HK]V.*?(?=\\*|\\/)")
+        }
+
+        if (cell == "T") {
+            clonal_tab[["j_genes"]] <- str_extract(string = clonal_tab[["j_genes"]], pattern = "TR[AB]J.*?(?=\\*|\\/)")
+        }
+
+        if (cell == "B") {
+            clonal_tab[["j_genes"]] <- str_extract(string = clonal_tab[["j_genes"]], pattern = "IG[HK]J.*?(?=\\*|\\/)")
+        }
+
+    }
+
+    v <- clonal_tab[["v_genes"]]
+    j <- clonal_tab[["j_genes"]]
+    l <- clonal_tab[["CDR3L"]]
+
+    # Generate a unique ID for each sequence
+
+    id <- paste(v, j, l, sep = "_")
+
+    # Detect identical IDs
+    if(any(duplicated(id))){
+        index_true <- grep(TRUE, id %in% id[duplicated(id)])
+        pass <- as.list(c())
+        vdl <- as.list(c())
+
+        #for each unique sequence:
+        #capture the index position of each clonal_tab group
+        #calculate the distance matrix ratio to the total sequence length
+        #pass the frequency matrix to pass
+        #pass the list of clonal_tab names to vdl
+
+        for (i in seq(1, length(unique(id[index_true]))) ) {
+
+            p <- grep(unique(id[index_true])[i], id)
+
+            dist_mat <- stringdistmatrix(clonal_tab[p, ][["CDR3"]], useNames = T)
+
+            pass[[i]] <- dist_mat / l[p][1]
+
+            vdl[[i]] <- grep(unique(id[index_true])[i], id, value = T)
+        }
+
+        # create a new column for the result
+        clonal_tab$clonality <- NA
+        # order
+        or <- order(unlist(lapply(lapply(pass, as.matrix), nrow)), decreasing = T)
+
+        pass <- pass[or]
+        # order
+        vdl <- vdl[or]
+
+        #for each frequency matrix,
+        #create a dataframe with the labels of each sequence
+        #cluster number based on the cutree
+        # function, 0 = most strigent, 1, less strigent
+        #create an ID for each clonal_tab group assign the ID to the original input
+
+        for (i in seq(1, length(pass))) {
+
+            df <- data.frame(Seq = labels(cutree(hclust(pass[[i]]), h = mm)),
+
+                             Clones = cutree(hclust(pass[[i]]), h = mm),
+
+                             ID = sprintf("%s.%s", i, cutree(hclust(pass[[i]]), h = mm)),
+
+                             orig.ident = vdl[[i]], stringsAsFactors = F)
+
+            clonal_tab[id %in% df$orig.ident, ]$clonality <- df$ID
+        }
+
+        # Make the unique sequences as an unique ID
+        n <- nrow(clonal_tab[is.na(clonal_tab$clonality), ])
+        clonal_tab[is.na(clonal_tab$clonality), ]$clonality <- sprintf("U%s", seq(1, n))
 
 
-  V.genes <- clonal[["Vgene"]]
-  J.genes <- clonal[["Jgene"]]
-  cdr3    <- clonal[["CDR3"]]
-  l.cdr3  <- clonal[["CDR3L"]]
+    }
 
-#Creates unique ID for each Cell
-  comp <-  paste(V.genes, J.genes, l.cdr3, sep = "_")
-
-#Detect identical IDs
-  index.true <- grep(TRUE, comp %in% comp[duplicated(comp)])
-  pass <- as.list(c())
-  V_J_L <- as.list(c())
-
-  for (i in seq(1, length(unique(comp[index.true])))) { #for each unique sequence
-    p <- grep(unique(comp[index.true])[i], comp)  #capture the index position of each clonal group
-    dist <- stringdistmatrix(clonal[p, ][["CDR3"]], useNames = T) #calculate the distance matrix
-    dist.mat <- dist/l.cdr3[p][1] #get the distance ratio to the total sequence length
-    pass[[i]] <- dist.mat #pass the frequency matrix to pass
-    V_J_L[[i]] <- grep(unique(comp[index.true])[i], comp, value = T) #pass the list of clonal names to V_J_L
-  }
-
-  clonal$Clonality <- NA #create a new column for the result
-
-  pass <- pass[order(unlist(lapply(lapply(pass, as.matrix), nrow)))] #order
-  V_J_L <- V_J_L[order(unlist(lapply(V_J_L, length)))] #order
-
-  for (i in seq(1, length(pass))) {  #for each frequency matrix, create a dataframe with
-    df <- data.frame(Seq = labels(cutree(hclust(pass[[i]]), h = Mismatch)), #the labels of each sequence
-                     Clones = cutree(hclust(pass[[i]]), h = Mismatch), #a cluster number based on the cutree function, 0 = most strigent, 1, less strigent
-                     ID = sprintf("%s.%s", i, cutree(hclust(pass[[i]]),h = Mismatch)),
-                     orig.ident = V_J_L[[i]], stringsAsFactors = F) #create an ID for each clonal group
+    else{
+        # Make the unique sequences as an unique ID
+        clonal_tab$clonality <- sprintf("U%s", 1:nrow(clonal_tab))
+    }
 
 
-    clonal[comp %in% df$orig.ident, ]$Clonality <- df$ID #assign the ID to the original input
-  }
-#Make the unique sequences as an unique ID
-  n <- nrow(clonal[is.na(clonal$Clonality), ])
-  clonal[is.na(clonal$Clonality), ]$Clonality <- sprintf("U%s", seq(1, n))
+    # Make the output as the original input or save a minimal version
+    if (output_original == TRUE) {
+        clonal_tab <- safejoin::safe_full_join(x = df_import, y = clonal_tab, by = setNames("CellId", id_col), conflict = coalesce)
+    } else {
 
-  #Make the output as the original input or save a minimal version
-  if(Output.orig == TRUE){
-    clonal  <- full_join(df.import, clonal, by = setNames("CellId", ID_Column))
-  }else{
-    clonal <- clonal[gtools::mixedorder(clonal$Clonality),]
-  }
+        clonal_tab <- clonal_tab[gtools::mixedorder(clonal_tab$clonality), ]
+    }
 
+    if (length(suffix) != 0) {
+        clonal_tab$clonality <- paste(suffix, clonal_tab$clonality, sep = "_")
+    }
 
-  #Save output
-  if(class(File)[1] != "character"){
-    assign(x = NewF, value = clonal, envir = .GlobalEnv)
-  }
-  else{
-    openxlsx::write.xlsx(x = clonal, file = sprintf("%s.xlsx", NewF), row.names = F)
-  }
+    # Save output
+    if (class(data)[1] != "character") {
+        assign(x = output, value = clonal_tab, envir = .GlobalEnv)
+    } else {
+        openxlsx::write.xlsx(x = clonal_tab, data = sprintf("%s.xlsx", output), row.names = F)
+    }
+
 
 
 }
