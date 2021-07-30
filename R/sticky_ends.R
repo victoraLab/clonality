@@ -51,8 +51,7 @@ sticky_ends <- function(list.pairs = list.pairs, clonality_input = clonality_inp
     j_gene <- res.sub[, sprintf("j_gene_%s", cols)] %>% tidyr::unite("j_gene", sep = "_") %>% pull(j_gene)
     cdr3_col <- res.sub[, sprintf("%s_%s", "cdr3_nt", cols)] %>% tidyr::unite("cdr3_col", sep = "_") %>% pull(cdr3_col)
     cdr3_col2 <- res.sub[, sprintf("%s_%s", "cdr3", cols)] %>% tidyr::unite("cdr3_col2", sep = "_") %>% pull(cdr3_col2)
-    cdr3_length <- as.data.frame(apply(res.sub[, sprintf("%s_%s", "cdr3_nt", cols)], MARGIN = 2, FUN = nchar)) %>% tidyr::unite("cdr3_length",
-                                                                                                                                sep = "_")
+    cdr3_length <- as.data.frame(apply(res.sub[, sprintf("%s_%s", "cdr3_nt", cols)], MARGIN = 2, FUN = nchar)) %>% tidyr::unite("cdr3_length", sep = "_")
 
 
     df1 <- data.frame(barcodes = barcodes, v_genes = v_gene,  j_genes = j_gene, CDR3 = cdr3_col,
