@@ -158,7 +158,7 @@ clonality <- function(data = "example.xlsx",
         }
 
         # Make the unique sequences as an unique ID
-        if(all(is.na(clonal_tab$clonality))){}else{
+        if(all(!is.na(clonal_tab$clonality))){}else{
             n <- nrow(clonal_tab[is.na(clonal_tab$clonality), ])
             clonal_tab[is.na(clonal_tab$clonality), ]$clonality <- sprintf("U%s", seq(1, n))
         }
