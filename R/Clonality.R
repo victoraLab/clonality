@@ -37,13 +37,26 @@ clonality <- function(data = "example.xlsx",
                       search_gname = T) {
 
 
+
     # Read data.frame/input xlsx table.
 
     if (class(data)[1] != "character") {
         df_import <- data
-    } else {
-        df_import <- read_excel(data)
+    } else{
+
+        if (any(c("xlsx", "csv")  %in% gsub("^.*\\.", "", data))){
+            if (gsub("^.*\\.", "", data) == "xlsx"){
+                df_import <- read_excel(data)
+            }
+
+            if (gsub("^.*\\.", "", data) == "csv"){
+                df_import <- read.csv2(data, sep = ",")
+            }
+        } else{
+            stop("Data can only be csv or xlsx", call. = FALSE)
+        }
     }
+
 
     # If rm.na is TRUE, remove all NA junctions prior to running
 
@@ -94,6 +107,7 @@ clonality <- function(data = "example.xlsx",
 
     # Detect identical IDs
     if(any(duplicated(id))){
+
         index_true <- grep(TRUE, id %in% id[duplicated(id)])
         pass <- as.list(c())
         vdl <- as.list(c())
