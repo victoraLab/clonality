@@ -85,7 +85,7 @@ tenx <- function(data = NULL, method = "unique_paired", only_productive = T, clo
 
     else if (method == "sticky_ends") {
 
-        sticky_ends(list.pairs = list.pairs, clonality_input = clonality_input)
+        sticky_ends(list.pairs = list.pairs, clonality_input = clonality_input, cell = cell)
 
     }
 

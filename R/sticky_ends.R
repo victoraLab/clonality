@@ -1,7 +1,7 @@
 
 #' @export
 
-sticky_ends <- function(list.pairs = list.pairs, classes = NULL, pairing = "_", clonality_input = clonality_input){
+sticky_ends <- function(list.pairs = list.pairs, clonality_input = clonality_input, cell = cell){
 
   BCell.classes   <- c("IGH", "IGK", "IGL", "IGH_IGH", "IGH_IGK", "IGH_IGL", "IGK_IGK", "IGL_IGL", "IGH_IGK_IGK", "IGH_IGL_IGL", "IGH_IGK_IGL", "IGH_IGH_IGK", "IGH_IGH_IGL",  "IGH_IGH_IGK_IGK")
   TabCell.classes <- c("TRA", "TRB", "TRA_TRB", "TRA_TRA", "TRB_TRB", "TRA_TRA_TRB", "TRA_TRB_TRB", "TRA_TRA_TRB_TRB")
