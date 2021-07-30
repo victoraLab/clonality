@@ -4,16 +4,33 @@
 \alias{tenx}
 \title{Define tenx}
 \usage{
-tenx(File = "example.xlsx", method = "unique_paired")
+tenx(
+  data = NULL,
+  method = "unique_paired",
+  only_productive = T,
+  clonality_input = NULL,
+  cell = "T",
+  classes = "all",
+  pairing = "_",
+  save.files = F
+)
 }
 \arguments{
-\item{File}{Data frame object or the full path to a xlsx input containing TCR/BCR repertoire data.}
+\item{data}{Data frame object or the full path to a xlsx input containing TCR/BCR repertoire data.}
 
 \item{method}{One of: unique_paired, unique_all, sticky_ends. Default: unique_paired.}
+
+\item{only_productive}{Logical.}
+
+\item{clonality_input}{clonality input parameters. List.}
+
+\item{classes}{Types of chains to be annotated. Character.}
+
+\item{pairing}{Character. _ for sticky_ends only.}
 }
 \description{
 Returns the input with an additional clonality column with clonal definitions.
 }
 \examples{
-clonality(File = tra)
+clonality(data = tra)
 }
