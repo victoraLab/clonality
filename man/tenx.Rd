@@ -2,7 +2,7 @@
 % Please edit documentation in R/tenx.R
 \name{tenx}
 \alias{tenx}
-\title{Define 10x genomics clonotypes}
+\title{Define 10x clonotypes}
 \usage{
 tenx(
   data = NULL,
@@ -10,7 +10,6 @@ tenx(
   only_productive = T,
   clonality_input = NULL,
   cell = "T",
-  pairing = "_",
   save.files = F
 )
 }
@@ -22,10 +21,12 @@ tenx(
 \item{only_productive}{Filter non productive chains. Logical.}
 
 \item{clonality_input}{Input parameters for the clonality function. List.}
+
+\item{cell}{Character. Possible values: \code{B} Bcells, \code{T} Tcells, \code{Tgd} Tcells GamaDelta.}
 }
 \description{
 Returns the input with an additional clonality column with clonal definitions.
 }
 \examples{
-clonality(data = filtered_contig_annotations)
+tenx(data = "filtered_contig_annotations", method = "sticky_ends", only_productive = T, clonality_input = c("mm" = 0.25), cell = "T",  save.files = F)
 }
