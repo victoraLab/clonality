@@ -38,7 +38,7 @@ clonality <- function(data = "example.xlsx",
 
 
 
-    # Read data.frame/input xlsx table.
+    # Read data.frame/input csv or xlsx table.
 
     if (class(data)[1] != "character") {
         df_import <- data
@@ -75,7 +75,7 @@ clonality <- function(data = "example.xlsx",
                              CDR3L = nchar(df[[cdr3_col]]),
                              stringsAsFactors = F)
 
-    # Clean IMGT table format
+    # Clean IMGT format
 
     if (search_gname == T) {
 
@@ -129,9 +129,9 @@ clonality <- function(data = "example.xlsx",
             vdl[[i]] <- grep(unique(id[index_true])[i], id, value = T)
         }
 
-        # create a new column for the result
+        #create a new column for the result
         clonal_tab$clonality <- NA
-        # order
+        #order
         or <- order(unlist(lapply(lapply(pass, as.matrix), nrow)), decreasing = T)
 
         pass <- pass[or]
@@ -141,7 +141,7 @@ clonality <- function(data = "example.xlsx",
         #for each frequency matrix,
         #create a dataframe with the labels of each sequence
         #cluster number based on the cutree
-        # function, 0 = most strigent, 1, less strigent
+        #function, 0 = most strigent, 1, less strigent
         #create an ID for each clonal_tab group assign the ID to the original input
 
         for (i in seq(1, length(pass))) {
@@ -157,7 +157,7 @@ clonality <- function(data = "example.xlsx",
             clonal_tab[id %in% df$orig.ident, ]$clonality <- df$ID
         }
 
-        # Make the unique sequences as an unique ID
+        # Add to the unique sequences an unique ID
         if(all(!is.na(clonal_tab$clonality))){}else{
             n <- nrow(clonal_tab[is.na(clonal_tab$clonality), ])
             clonal_tab[is.na(clonal_tab$clonality), ]$clonality <- sprintf("U%s", seq(1, n))
@@ -173,7 +173,7 @@ clonality <- function(data = "example.xlsx",
     }
 
 
-    # Make the output as the original input or save a minimal version
+    # Import the output to the original input or save a minimal version
     if (output_original == TRUE) {
         clonal_tab <- safejoin::safe_full_join(x = df_import, y = clonal_tab, by = setNames("CellId", id_col), conflict = coalesce)
     } else {
