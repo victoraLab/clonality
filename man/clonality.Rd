@@ -39,6 +39,10 @@ clonality(
 \item{output_original}{If \code{TRUE}, output = input with extra clonality column. Default: 'FALSE'.}
 
 \item{mm}{Percent of mismatches allowed in subgroups. Default: 0}
+
+\item{suffix}{Character. String to be appended to the clonality ID.}
+
+\item{search_gname}{Logical. If the script should search and trim the IMGT nomeklature to simplify gene IDs.}
 }
 \description{
 Returns table with clonality definitions.

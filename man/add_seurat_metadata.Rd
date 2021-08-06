@@ -8,7 +8,8 @@ add_seurat_metadata(
   seu = NULL,
   clonal.list = ls(pattern = "^Clonal", envir = .GlobalEnv),
   cdr3_map = "cdr3_col2",
-  purity = 0.8
+  purity = 0.5,
+  sticky = FALSE
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ add_seurat_metadata(
 \item{cdr3_map}{Character. The columun name to be used to map single chains to paired chains. CDR3 for nt ; cdr3_col2 for aa. Default: "cdr3_col2".}
 
 \item{purity}{Numeric. Minimum fraction of the dominant mapped paired to be assigned to single.}
+
+\item{sticky}{Logical. If the script should merge the clonality of single chain cells with paired cells.}
 }
 \description{
 Takes a list of paired chains and defines clonotypes.

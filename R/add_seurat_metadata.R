@@ -6,14 +6,15 @@
 #' @param clonal.list Character. The clonalities to be inserted into the seurat metadata. Default:  `ls(pattern = "^Clonal")`.
 #' @param cdr3_map Character. The columun name to be used to map single chains to paired chains. CDR3 for nt ; cdr3_col2 for aa. Default: "cdr3_col2".
 #' @param purity Numeric. Minimum fraction of the dominant mapped paired to be assigned to single.
+#' @param sticky Logical. If the script should merge the clonality of single chain cells with paired cells.
 #'
 
 #' @importFrom stringr str_count
 #' @export
 #'
-add_seurat_metadata <- function(seu = NULL, clonal.list = ls(pattern = "^Clonal", envir = .GlobalEnv), cdr3_map = "cdr3_col2", purity = 0.8){
+add_seurat_metadata <- function(seu = NULL, clonal.list = ls(pattern = "^Clonal", envir = .GlobalEnv), cdr3_map = "cdr3_col2", purity = 0.5, sticky = FALSE){
 
-  if(length(seu) == 0){stop("Please add Seurat object to merge clonality.")}
+  if(is.null(seu)){stop("Please add Seurat object to merge clonality.")}
 
   get_mapped.singles <- function(x){
     if(nrow(x) == 0){
@@ -37,7 +38,6 @@ add_seurat_metadata <- function(seu = NULL, clonal.list = ls(pattern = "^Clonal"
 
   }
 
-
   get_fixed_clonality <- function(x){
 
     return(names(which.max(table(x[["clonality"]]))))
@@ -46,10 +46,11 @@ add_seurat_metadata <- function(seu = NULL, clonal.list = ls(pattern = "^Clonal"
   singles <- c(clonal.list[grep("_", clonal.list, invert = T)])
   pairs   <- c(clonal.list[grep("^^[^_]*_[^_]*$", clonal.list)])
   multi <- clonal.list[!clonal.list %in% c(singles,pairs)]
- c1 <- do.call(bind_rows, mget(singles, envir = .GlobalEnv))
+  c1 <- do.call(bind_rows, mget(singles, envir = .GlobalEnv))
   c2 <- do.call(bind_rows, mget(pairs, envir = .GlobalEnv))
-  c4 <- do.call(bind_rows, mget(multi, envir = .GlobalEnv))
+  c3 <- do.call(bind_rows, mget(multi, envir = .GlobalEnv))
 
+  if(sticky == T){
   # which single chain, matches the paired cdr3
   c1.mapped <- apply(c1, 1 , function(x) c2[grepl(x[[cdr3_map]], c2[[cdr3_map]]),])
 
@@ -65,10 +66,10 @@ add_seurat_metadata <- function(seu = NULL, clonal.list = ls(pattern = "^Clonal"
   c1$clonality <- coalesce(c1$clonality.corrected, c1$clonality)
   c1$clonality.corrected <- NULL
 
+}
+ #c3 <- do.call(bind_rows, mget(setdiff(ls(pattern = "^Clonal"), clonal.list)))
 
-  c3 <- do.call(bind_rows, mget(setdiff(ls(pattern = "^Clonal"), clonal.list)))
-
-  c0 <- bind_rows(c1,c2,c3,c4)
+  c0 <- bind_rows(c1,c2,c3)
 
   meta <- seu@meta.data
   meta$barcodes <- rownames(meta)

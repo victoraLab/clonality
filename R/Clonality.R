@@ -12,6 +12,8 @@
 #' @param rm.na Remove NA junctions. If `FALSE`, set to unique. Default: 'TRUE'.
 #' @param output_original If `TRUE`, output = input with extra clonality column. Default: 'FALSE'.
 #' @param mm Percent of mismatches allowed in subgroups. Default: 0
+#' @param suffix Character. String to be appended to the clonality ID.
+#' @param search_gname Logical. If the script should search and trim the IMGT nomeklature to simplify gene IDs.
 #' @examples
 #' clonality(data = tra)
 #' clonality(data = trb)
