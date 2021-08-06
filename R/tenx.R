@@ -25,10 +25,12 @@ tenx <- function(data = NULL, method = "unique_paired", only_productive = T, clo
         data <- filtered_contig_annotations
     }
 
-    # Extract extention
-    ext <- str_extract(string = data, pattern = "\\..*") == ".csv"
+
 
     if(!is.data.frame(data)){
+        # Extract extention
+        ext <- str_extract(string = data, pattern = "\\..*") == ".csv"
+
         if(!is.na(ext)){
             data <- read.csv(data)
         }else{
