@@ -2,7 +2,7 @@
 % Please edit documentation in R/clonality.R
 \name{clonality}
 \alias{clonality}
-\title{Define clonality}
+\title{Annotate clonality}
 \usage{
 clonality(
   data = "example.xlsx",
@@ -12,7 +12,6 @@ clonality(
   jgene_col = "J_GENE_and_allele",
   cdr3_col = "JUNCTION",
   cell = "T",
-  rm.na = TRUE,
   output_original = FALSE,
   mm = 0,
   suffix = NULL,
@@ -20,11 +19,11 @@ clonality(
 )
 }
 \arguments{
-\item{data}{Data frame object or the full path to a xlsx with rep data.}
+\item{data}{A data frame object or the full path to a xlsx with repertoire data.}
 
-\item{output}{The data output name. Default: output.}
+\item{output}{The output name. Default: output.}
 
-\item{id_col}{The column with an unique ID. Default: 'Sequence_ID'.}
+\item{id_col}{The column with unique sequence IDs. Default: 'Sequence_ID'.}
 
 \item{vgene_col}{The column with V gene names. Default: 'V_GENE_and_allele'.}
 
@@ -34,18 +33,16 @@ clonality(
 
 \item{cell}{Choose between T for T cell or B for B cell. Default: 'T'.}
 
-\item{rm.na}{Remove NA junctions. If \code{FALSE}, set to unique. Default: 'TRUE'.}
-
-\item{output_original}{If \code{TRUE}, output = input with extra clonality column. Default: 'FALSE'.}
+\item{output_original}{If \code{TRUE}, output and input have same format. Default: 'FALSE'.}
 
 \item{mm}{Percent of mismatches allowed in subgroups. Default: 0}
 
 \item{suffix}{Character. String to be appended to the clonality ID.}
 
-\item{search_gname}{Logical. If the script should search and trim the IMGT nomeklature to simplify gene IDs.}
+\item{search_gname}{Logical. Accepts IMGT nomenclature and simplify gene IDs. Default: 'TRUE'.}
 }
 \description{
-Returns table with clonality definitions.
+Returns the input table with the clonality annotations.
 }
 \examples{
 clonality(data = tra)

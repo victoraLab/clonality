@@ -61,4 +61,5 @@
 #'   ...
 #' }
 #'
+#'
 "filtered_contig_annotations"

@@ -2,7 +2,7 @@
 % Please edit documentation in R/tenx.R
 \name{tenx}
 \alias{tenx}
-\title{Define 10x clonotypes}
+\title{Annotate 10x clones}
 \usage{
 tenx(
   data = NULL,
@@ -14,18 +14,18 @@ tenx(
 )
 }
 \arguments{
-\item{data}{Data frame object or the full path to a filtered_contig_annotations.csv input.}
+\item{data}{Character. Data frame object or the full path to a filtered_contig_annotations.csv file.}
 
-\item{method}{One of: unique_paired, unique_all, sticky_ends. Default: unique_paired. Character.}
+\item{method}{Character. One of: unique_paired, unique_all, sticky_ends. Default: unique_paired.}
 
-\item{only_productive}{Filter non productive chains. Logical.}
+\item{only_productive}{Logical. Filter non productive chains.}
 
-\item{clonality_input}{Input parameters for the clonality function. List.}
+\item{clonality_input}{Named vector. Input parameters for the clonality function.}
 
-\item{cell}{Character. Possible values: \code{B} Bcells, \code{T} Tcells, \code{Tgd} Tcells GamaDelta.}
+\item{cell}{Character. Possible values: \code{B} Bcells, \code{T} Tcells, \code{Tgd} Gamma Delta T cells.}
 }
 \description{
-Returns the input with an additional clonality column with clonal definitions.
+Returns the input with clonality annotation column with clonal definitions.
 }
 \examples{
 tenx(data = "filtered_contig_annotations", method = "sticky_ends", only_productive = T, clonality_input = c("mm" = 0.25), cell = "T",  save.files = F)

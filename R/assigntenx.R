@@ -54,6 +54,7 @@ assigntenx <- function(list.pairs = list.pairs, method = method, clonality_input
 }
 
   # Filter the classes to be used
+  classes <- classes[!grepl("None", classes)]
   list.pairs_filt <- list.pairs[names(list.pairs) %in% classes]
 
   # Merge the df of classes with one row per chain
@@ -81,14 +82,19 @@ assigntenx <- function(list.pairs = list.pairs, method = method, clonality_input
     res.sub <- res.sub %>% select_if(all_na)
 
     v_gene <- res.sub %>% ungroup() %>% select(starts_with("v_gene")) %>% tidyr::unite("v_gene", sep = "_") %>% pull(v_gene)
+    v_genes_unique <- res.sub %>% ungroup() %>% select(starts_with("v_gene"))
     j_gene <- res.sub %>% ungroup() %>% select(starts_with("j_gene")) %>% tidyr::unite("j_gene", sep = "_") %>% pull(j_gene)
+    j_genes_unique <- res.sub %>% ungroup() %>% select(starts_with("j_gene"))
     cdr3_col <- res.sub %>% ungroup() %>% select(starts_with("cdr3_nt")) %>% tidyr::unite("cdr3_nt", sep = "_") %>% pull(cdr3_nt)
+    cdr3_col_unique <- res.sub %>% ungroup() %>% select(starts_with("cdr3_nt"))
     cdr3_col2 <- res.sub %>% ungroup() %>% select(matches(cdr3.match)) %>% tidyr::unite("cdr3", sep = "_") %>% pull(cdr3)
+    cdr3_col2_unique <- res.sub %>% ungroup() %>% select(matches(cdr3.match))
+
     cdr3_length <- as.data.frame(apply(res.sub %>% ungroup() %>% select(starts_with("cdr3_nt")), MARGIN = 2, FUN = nchar)) %>% tidyr::unite("cdr3_length", sep = "_") %>% pull(cdr3_length)
 
 
-    df1 <- data.frame(barcodes = barcodes, v_genes = v_gene,  j_genes = j_gene, CDR3 = cdr3_col,
-                      cdr3_col2 = cdr3_col2, cdr3_length = cdr3_length, raw_clonotypes = raw_clonotypes)
+    df1 <- data.frame(barcodes = barcodes, v_genes = v_gene, v_genes_unique, j_genes = j_gene, j_genes_unique, CDR3 = cdr3_col, cdr3_col_unique,
+                      cdr3_col2 = cdr3_col2, cdr3_col2_unique, cdr3_length = cdr3_length, raw_clonotypes = raw_clonotypes)
 
     df1$v_genes <- gsub("\\+",";",df1$v_genes)
     df1$j_genes <- gsub("\\+",";",df1$j_genes)
