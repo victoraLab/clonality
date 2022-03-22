@@ -1,19 +1,18 @@
-#' Define clonality
+#' Annotate clonality
 #'
-#' Returns table with clonality definitions.
+#' Returns the input table with the clonality annotations.
 #'
-#' @param data Data frame object or the full path to a xlsx with rep data.
-#' @param output The data output name. Default: output.
-#' @param id_col The column with an unique ID. Default: 'Sequence_ID'.
+#' @param data A data frame object or the full path to a xlsx with repertoire data.
+#' @param output The output name. Default: output.
+#' @param id_col The column with unique sequence IDs. Default: 'Sequence_ID'.
 #' @param vgene_col The column with V gene names. Default: 'V_GENE_and_allele'.
 #' @param jgene_col The column with J gene names. Default: 'J_GENE_and_allele'.
 #' @param cdr3_col The column with CDR3 sequences - nt/aa. Default: 'JUNCTION'.
 #' @param cell Choose between T for T cell or B for B cell. Default: 'T'.
-#' @param rm.na Remove NA junctions. If `FALSE`, set to unique. Default: 'TRUE'.
-#' @param output_original If `TRUE`, output = input with extra clonality column. Default: 'FALSE'.
+#' @param output_original If `TRUE`, output and input have same format. Default: 'FALSE'.
 #' @param mm Percent of mismatches allowed in subgroups. Default: 0
 #' @param suffix Character. String to be appended to the clonality ID.
-#' @param search_gname Logical. If the script should search and trim the IMGT nomeklature to simplify gene IDs.
+#' @param search_gname Logical. Accepts IMGT nomenclature and simplify gene IDs. Default: 'TRUE'.
 #' @examples
 #' clonality(data = tra)
 #' clonality(data = trb)
@@ -32,20 +31,22 @@ clonality <- function(data = "example.xlsx",
                       jgene_col = "J_GENE_and_allele",
                       cdr3_col = "JUNCTION",
                       cell = "T",
-                      rm.na = TRUE,
                       output_original = FALSE,
                       mm = 0,
                       suffix = NULL,
                       search_gname = T) {
 
-
-
     # Read data.frame/input csv or xlsx table.
-
+    #If input is not xlsx,  read from R object
     if (class(data)[1] != "character") {
+      if("data.frame" %in% class(trb)){
         df_import <- data
-    } else{
-
+        }
+      else{
+        stop("Data is not a data.frame", call. = FALSE)
+        }
+      } else {
+    #Read xlsx or csv files from text input
         if (any(c("xlsx", "csv")  %in% gsub("^.*\\.", "", data))){
             if (gsub("^.*\\.", "", data) == "xlsx"){
                 df_import <- read_excel(data)
@@ -60,15 +61,12 @@ clonality <- function(data = "example.xlsx",
     }
 
 
-    # If rm.na is TRUE, remove all NA junctions prior to running
+    # Remove all NA junctions prior to running
 
-    if (rm.na == TRUE) {
-        df <- df_import[!is.na(df_import[[cdr3_col]]), ]
-    } else {
-        df <- df_import
-    }
+  df <- df_import[!is.na(df_import[[cdr3_col]]), ]
+  df <- df_import[df_import[[cdr3_col]] != "", ]
 
-    # Create a simple table
+    # Create a simpler data table
 
     clonal_tab <- data.frame(CellId = df[[id_col]],
                              v_genes = df[[vgene_col]],
@@ -76,6 +74,10 @@ clonality <- function(data = "example.xlsx",
                              CDR3 = df[[cdr3_col]],
                              CDR3L = nchar(df[[cdr3_col]]),
                              stringsAsFactors = F)
+
+    if (any(complete.cases(clonal_tab) == FALSE)){
+      stop("Some rows might have empty V or J genes")
+    }
 
     # Clean IMGT format
 
@@ -99,6 +101,7 @@ clonality <- function(data = "example.xlsx",
 
     }
 
+    #First filter, cells must match V gene, J gene and CDR3 Length
     v <- clonal_tab[["v_genes"]]
     j <- clonal_tab[["j_genes"]]
     l <- clonal_tab[["CDR3L"]]
@@ -108,7 +111,7 @@ clonality <- function(data = "example.xlsx",
     id <- paste(v, j, l, sep = "_")
 
     # Detect identical IDs
-    if(any(duplicated(id))){
+    if (any(duplicated(id))){
 
         index_true <- grep(TRUE, id %in% id[duplicated(id)])
         pass <- as.list(c())
@@ -133,22 +136,23 @@ clonality <- function(data = "example.xlsx",
 
         #create a new column for the result
         clonal_tab$clonality <- NA
-        #order
+        #order pass
         or <- order(unlist(lapply(lapply(pass, as.matrix), nrow)), decreasing = T)
-
         pass <- pass[or]
-        # order
+        # order vdl
         vdl <- vdl[or]
 
+        #Subset clones on the CDR3 level accordingly to mismatch parameter.
+
         #for each frequency matrix,
-        #create a dataframe with the labels of each sequence
+        #create a data frame with the labels of each sequence
         #cluster number based on the cutree
-        #function, 0 = most strigent, 1, less strigent
+        #function, 0 = most stringent, 1, less stringent
         #create an ID for each clonal_tab group assign the ID to the original input
 
         for (i in seq(1, length(pass))) {
 
-            df <- data.frame(Seq = labels(cutree(hclust(pass[[i]]), h = mm)),
+            df <- data.frame(Seq = labels(cutree(hclust(pass[[i]], method = "complete"), h = mm)),
 
                              Clones = cutree(hclust(pass[[i]]), h = mm),
 
@@ -160,16 +164,17 @@ clonality <- function(data = "example.xlsx",
         }
 
         # Add to the unique sequences an unique ID
-        if(all(!is.na(clonal_tab$clonality))){}else{
+        if (all(!is.na(clonal_tab$clonality))){
+
+        } else {
             n <- nrow(clonal_tab[is.na(clonal_tab$clonality), ])
             clonal_tab[is.na(clonal_tab$clonality), ]$clonality <- sprintf("U%s", seq(1, n))
         }
 
 
+#If there is no duplicated sequence id, just call every id unique.
 
-    }
-
-    else{
+    } else {
         # Make the unique sequences as an unique ID
         clonal_tab$clonality <- sprintf("U%s", 1:nrow(clonal_tab))
     }
@@ -177,7 +182,7 @@ clonality <- function(data = "example.xlsx",
 
     # Import the output to the original input or save a minimal version
     if (output_original == TRUE) {
-        clonal_tab <- safejoin::safe_full_join(x = df_import, y = clonal_tab, by = setNames("CellId", id_col), conflict = coalesce)
+        clonal_tab <- safe_full_join(x = df_import, y = clonal_tab, by = setNames("CellId", id_col), conflict = coalesce)
     } else {
 
         clonal_tab <- clonal_tab[gtools::mixedorder(clonal_tab$clonality), ]
