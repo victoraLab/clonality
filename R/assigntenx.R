@@ -8,97 +8,114 @@
 #' @export
 #'
 #'
-assigntenx <- function(list.pairs = list.pairs, method = method, clonality_input = clonality_input, cell = cell){
+assigntenx <- function(list.pairs = list.pairs, method = method, clonality_input = clonality_input, cell = cell, col_res = col_res,  save_files = save_files){
+  #Define classes to be used
 
   if(method == "unique_all"){
     classes <- names(list.pairs)
-    if(cell == "B"){
+    classes <- classes[!grepl("None", classes)]
+  } else{
+    classes.list    <- switch(method, unique_paired = cell.classes$unique_paired,
+                              sticky_ends = cell.classes$sticky_ends)
 
-      cdr3.match <- "cdr3_IG"
-    }
-    if(cell == "T"){
-
-      cdr3.match <- "cdr3_TR"
-    }
-    if(cell == "Tgd"){
-
-      cdr3.match <- "cdr3_TR"
-    }
-  }
-  else{
-  if(method == "sticky_ends"){
-    BCell.classes   <- c("IGH", "IGK", "IGL", "IGH_IGH", "IGH_IGK", "IGH_IGL", "IGK_IGK", "IGL_IGL", "IGH_IGK_IGK", "IGH_IGL_IGL", "IGH_IGK_IGL", "IGH_IGH_IGK", "IGH_IGH_IGL",  "IGH_IGH_IGK_IGK")
-    TabCell.classes <- c("TRA", "TRB", "TRA_TRB", "TRA_TRA", "TRB_TRB", "TRA_TRA_TRB", "TRA_TRB_TRB", "TRA_TRA_TRB_TRB")
-    TgdCell.classes <- c("TRD", "TRG", "TRD_TRG", "TRD_TRD", "TRG_TRG", "TRD_TRD_TRG", "TRD_TRG_TRG", "TRD_TRD_TRG_TRG")
+    classes         <- switch(cell, "B"   = classes.list$  BCell.classes,
+                                    "T"   = classes.list$TabCell.classes,
+                                    "Tgd" = classes.list$TgdCell.classes)
   }
 
-  if(method == "unique_paired"){
-    # Classes of pairing to be used on clonality
-    BCell.classes   <- c("IGH_IGK", "IGH_IGL", "IGH_IGK_IGK", "IGH_IGL_IGL",  "IGH_IGH_IGK", "IGH_IGH_IGL",  "IGH_IGH_IGK_IGK")
-    TabCell.classes <- c("TRA_TRB", "TRA_TRA_TRB", "TRA_TRB_TRB", "TRA_TRA_TRB_TRB")
-    TgdCell.classes <- c("TRD_TRG", "TRD_TRD_TRG", "TRD_TRG_TRG", "TRD_TRD_TRG_TRG")
-  }
-
-  if(cell == "B"){
-    classes <- BCell.classes
-    cdr3.match <- "cdr3_IG"
-  }
-  if(cell == "T"){
-    classes <- TabCell.classes
-    cdr3.match <- "cdr3_TR"
-  }
-  if(cell == "Tgd"){
-    classes <- TgdCell.classes
-    cdr3.match <- "cdr3_TR"
-  }
-}
+  cdr3.match <- switch(cell, "B" = "cdr3_IG", "T" = "cdr3_TR", "Tgd" = "cdr3_TR")
 
   # Filter the classes to be used
-  classes <- classes[!grepl("None", classes)]
   list.pairs_filt <- list.pairs[names(list.pairs) %in% classes]
 
-  # Merge the df of classes with one row per chain
+  # Concatenate each element of the list into a list of lists
+  # Transform it into a data frame with 1 cell per row
   res <- do.call(c, list.pairs_filt)
   res <- lapply(res, row1)
   res <- bind_rows(res, .id = "classes")
 
+  #Extract chain
   res$classes <- gsub("\\..*", "", res$classes)
 
+  #Coalesces raw_clonotype and barcode columns for each chain/cell
   res <- res %>% mutate_at(vars(matches("raw")), as.character) %>% mutate(sc.raw_clonotypes = coalesce(!!!select(., matches("raw"))))
   res <- res %>% mutate_at(vars(matches("bar")), as.character) %>% mutate(sc.barcodes = coalesce(!!!select(., matches("bar"))))
 
+  #Removes individual.chain columns
   res <- res %>% select(-contains("raw_clonotype_id"))
   res <- res %>% select(-contains("barcode_"))
 
   #Function to remove columns with all rows = NA
   all_na <- function(x) any(!is.na(x))
 
+  #Apply this procedures to each class separately
   for (i in unique(res$classes)) {
 
     res.sub <- res %>% filter(classes == i)
     barcodes <- res.sub$sc.barcodes
     raw_clonotypes <- res.sub$sc.raw_clonotypes
+
+    #Order columns alphabetically and remove all NA rows
     res.sub <- res.sub[,order(colnames(res.sub))]
     res.sub <- res.sub %>% select_if(all_na)
 
+    #Concatenate all V-genes
     v_gene <- res.sub %>% ungroup() %>% select(starts_with("v_gene")) %>% tidyr::unite("v_gene", sep = "_") %>% pull(v_gene)
+
+    #All V-genes separated
     v_genes_unique <- res.sub %>% ungroup() %>% select(starts_with("v_gene"))
+
+    #Concatenate all J-genes
     j_gene <- res.sub %>% ungroup() %>% select(starts_with("j_gene")) %>% tidyr::unite("j_gene", sep = "_") %>% pull(j_gene)
+
+    #All J-genes separated
     j_genes_unique <- res.sub %>% ungroup() %>% select(starts_with("j_gene"))
+
+    #Concatenate all CDR3 nt
     cdr3_col <- res.sub %>% ungroup() %>% select(starts_with("cdr3_nt")) %>% tidyr::unite("cdr3_nt", sep = "_") %>% pull(cdr3_nt)
+
+    #All CDR3 nt separated
     cdr3_col_unique <- res.sub %>% ungroup() %>% select(starts_with("cdr3_nt"))
+
+    #Concatenate all CDR3 aa
     cdr3_col2 <- res.sub %>% ungroup() %>% select(matches(cdr3.match)) %>% tidyr::unite("cdr3", sep = "_") %>% pull(cdr3)
+
+    #All CDR3 aa separated
     cdr3_col2_unique <- res.sub %>% ungroup() %>% select(matches(cdr3.match))
 
+    #Concatenate CDR3 nt length
     cdr3_length <- as.data.frame(apply(res.sub %>% ungroup() %>% select(starts_with("cdr3_nt")), MARGIN = 2, FUN = nchar)) %>% tidyr::unite("cdr3_length", sep = "_") %>% pull(cdr3_length)
 
 
-    df1 <- data.frame(barcodes = barcodes, v_genes = v_gene, v_genes_unique, j_genes = j_gene, j_genes_unique, CDR3 = cdr3_col, cdr3_col_unique,
-                      cdr3_col2 = cdr3_col2, cdr3_col2_unique, cdr3_length = cdr3_length, raw_clonotypes = raw_clonotypes)
+    #Create final metadata table
+    df.full <- data.frame(barcodes = barcodes,
+                          v_genes = v_gene,
+                          v_genes_unique,
+                          j_genes = j_gene,
+                          j_genes_unique,
+                          CDR3 = cdr3_col,
+                          cdr3_col_unique,
+                          cdr3_col2 = cdr3_col2,
+                          cdr3_col2_unique,
+                          cdr3_length = cdr3_length,
+                          raw_clonotypes = raw_clonotypes)
 
-    df1$v_genes <- gsub("\\+",";",df1$v_genes)
-    df1$j_genes <- gsub("\\+",";",df1$j_genes)
+    df.reduced <- data.frame(barcodes = barcodes,
+                             v_genes = v_gene,
+                             j_genes = j_gene,
+                             CDR3 = cdr3_col,
+                             cdr3_col2 = cdr3_col2,
+                             cdr3_length = cdr3_length,
+                             raw_clonotypes = raw_clonotypes)
 
+    df1 <- switch(col_res, "full" = df.full, "reduced" = df.reduced)
+
+
+    #If 2 or more chains are solutions for the same cell
+    df1$v_genes <- gsub("\\+", ";", df1$v_genes)
+    df1$j_genes <- gsub("\\+", ";", df1$j_genes)
+
+    #Input default parameters for clonality
     if(length(clonality_input) == 0){
       clonality_input <- c(output = "Clonal.output.10x", vgene_col = "v_genes", jgene_col = "j_genes", cdr3_col = "CDR3",
                            cell = "T", output_original = T,  id_col = "barcodes", mm = 0, search_gname = F)
@@ -126,5 +143,14 @@ assigntenx <- function(list.pairs = list.pairs, method = method, clonality_input
               mm = as.numeric(clonality_input["mm"]),
               search_gname = as.logical(clonality_input["search_gname"]))
   }
+
+
+  # if(save.files == T){
+  #   files <- ls(pattern = "^Clonal", envir = .GlobalEnv)
+  #   for(i in files){
+  #     write.xlsx(x = get(i), file = sprintf("%s.xlsx", i), rowNames = F)
+  #   }
+  #
+  # }
 
 }
