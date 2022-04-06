@@ -8,9 +8,11 @@ tenx(
   data = NULL,
   method = "unique_paired",
   only_productive = T,
+  only_true_cells = T,
   clonality_input = NULL,
   cell = "T",
-  save.files = F
+  col_res = c("full"),
+  save_files = F
 )
 }
 \arguments{
@@ -20,9 +22,15 @@ tenx(
 
 \item{only_productive}{Logical. Filter non productive chains.}
 
+\item{only_true_cells}{Logical. Filter low quality / non true cells}
+
 \item{clonality_input}{Named vector. Input parameters for the clonality function.}
 
 \item{cell}{Character. Possible values: \code{B} Bcells, \code{T} Tcells, \code{Tgd} Gamma Delta T cells.}
+
+\item{col_res}{Character. Possible values: \code{full} paired and unique chain columns, \code{reduced} only paired chain columns.}
+
+\item{save_files}{Logical. Whether to save the Cl matrices as xlsx files or not.}
 }
 \description{
 Returns the input with clonality annotation column with clonal definitions.

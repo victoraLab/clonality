@@ -8,7 +8,9 @@ assigntenx(
   list.pairs = list.pairs,
   method = method,
   clonality_input = clonality_input,
-  cell = cell
+  cell = cell,
+  col_res = col_res,
+  save_files = save_files
 )
 }
 \arguments{

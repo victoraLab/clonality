@@ -22,7 +22,7 @@
 #' @importFrom stringr str_extract
 #' @importFrom safejoin safe_full_join
 #' @importFrom gtools mixedorder
-#' @export
+#' @exports
 
 clonality <- function(data = "example.xlsx",
                       output = "output",

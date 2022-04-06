@@ -2,12 +2,12 @@
 
 export(add_seurat_metadata)
 export(assigntenx)
-export(clonality)
 export(row1)
 export(tenx)
 import(dplyr)
 importFrom(data.table,rbindlist)
 importFrom(gtools,mixedorder)
+importFrom(openxlsx,write.xlsx)
 importFrom(readxl,read_excel)
 importFrom(safejoin,safe_full_join)
 importFrom(stringdist,stringdistmatrix)
