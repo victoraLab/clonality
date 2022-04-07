@@ -8,6 +8,7 @@ add_seurat_metadata(
   seu = NULL,
   clonal.list = ls(pattern = "^Clonal", envir = .GlobalEnv),
   cdr3_map = "cdr3_col2",
+  cell = "T",
   purity = 0.8,
   stick_only = "all",
   sticky = FALSE,
@@ -20,6 +21,8 @@ add_seurat_metadata(
 \item{clonal.list}{Character. The clonalities to be inserted into the seurat metadata. Default:  \code{ls(pattern = "^Clonal")}.}
 
 \item{cdr3_map}{Character. The columun name to be used to map single chains to paired chains. CDR3 for nt ; cdr3_col2 for aa. Default: "cdr3_col2".}
+
+\item{cell}{Character. Possible values: \code{B} Bcells, \code{T} Tcells, \code{Tgd} Tcells GamaDelta.}
 
 \item{purity}{Numeric. Minimum fraction of the dominant mapped paired to be used in a sticky assignment.}
 
