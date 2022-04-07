@@ -8,7 +8,6 @@
 #' @param purity Numeric. Minimum fraction of the dominant mapped paired to be used in a sticky assignment.
 #' @param sticky Logical. If the script should merge the clonality of single chain cells with paired cells.
 #' @param stick_only Character vector. Possible values: `TRA`, `TRB`, `TRD`, `TRG`, `IGH`, `IGK`, `IGL`, `all`. Default: `all`
-#' @param immunarch Logical. Whether to generate immunarch compatible input.
 #' @param cell Character. Possible values: `B` Bcells, `T` Tcells, `Tgd` Tcells GamaDelta.
 #' @param overwrite Logical. Whether to overwrite clonality columns from seurat.
 
@@ -106,6 +105,7 @@ add_seurat_metadata <- function(seu = NULL, clonal.list = ls(pattern = "^Clonal"
 
   #Replace old IDs
   c1 <- left_join(c1, df, by = c("barcodes" = "names"))
+  c1$clonality.correction <- c("Corrected", "Normal")[as.numeric(coalesce(c1$clonality.corrected, c1$clonality) == c1$clonality) + 1]
 
   c1$clonality <- coalesce(c1$clonality.corrected, c1$clonality)
   c1$clonality.corrected <- NULL
@@ -116,6 +116,7 @@ add_seurat_metadata <- function(seu = NULL, clonal.list = ls(pattern = "^Clonal"
   c0 <- bind_rows(c1,c2,c3)
   colnames(c0) <- paste0("Res_", colnames(c0))
   rownames(c0) <- c0[["Res_barcodes"]]
+  c0$Res_clonality.correction[is.na(c0$Res_clonality.correction)] <- "Not tested"
 
   if(overwrite == T){
     seu@meta.data <- seu@meta.data %>% select(-contains("Res_"))

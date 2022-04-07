@@ -22,7 +22,7 @@ tenx(
 
 \item{only_productive}{Logical. Filter non productive chains.}
 
-\item{only_true_cells}{Logical. Filter low quality / non true cells}
+\item{only_true_cells}{Logical. Filter low quality / non true cells. Using the default \code{TRUE} with the all_contig_annotations.csv file is equivalent of just running on the filtered_contig_annotations.csv.}
 
 \item{clonality_input}{Named vector. Input parameters for the clonality function.}
 
