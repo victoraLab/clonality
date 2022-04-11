@@ -31,8 +31,6 @@ add_seurat_metadata(
 \item{sticky}{Logical. If the script should merge the clonality of single chain cells with paired cells.}
 
 \item{overwrite}{Logical. Whether to overwrite clonality columns from seurat.}
-
-\item{immunarch}{Logical. Whether to generate immunarch compatible input.}
 }
 \description{
 Takes a list of paired chains and defines clonotypes.

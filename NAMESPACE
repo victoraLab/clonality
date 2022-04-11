@@ -2,6 +2,8 @@
 
 export(add_seurat_metadata)
 export(assigntenx)
+export(clonality)
+export(gen_immunarch)
 export(row1)
 export(tenx)
 import(dplyr)
@@ -15,3 +17,4 @@ importFrom(stringdist,stringdistmatrix)
 importFrom(stringr,str_count)
 importFrom(stringr,str_extract)
 importFrom(tidyr,pivot_wider)
+importFrom(tidyr,separate)
