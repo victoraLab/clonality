@@ -4,18 +4,25 @@
 \alias{gen_immunarch}
 \title{Generates an immunarch compatible input}
 \usage{
-gen_immunarch(seu = seu, proportion = "detected", sample_column = NULL)
+gen_immunarch(
+  seu = seu,
+  proportion = "rm.na",
+  sample_column = NULL,
+  metadata_columns = NULL
+)
 }
 \arguments{
-\item{proportion}{Character. Possible values: \code{all} against all cells, \code{detected} remove NAs prior to proportion.}
+\item{seu}{Seurat with clonality generated columns.}
+
+\item{proportion}{Character. Possible values: \code{all} against all cells, \code{rm.na} remove NAs prior to proportion.}
 
 \item{sample_column}{Character. Column to be used as sample to cut the data.}
 
-\item{data}{A data frame object or the full path to a xlsx with repertoire data.}
+\item{metadata_columns}{Character. Columns to split the data.}
 }
 \description{
 Returns a dataset compatible with the immunarch package.
 }
 \examples{
-gen_immunarch(seu, proportion = "detected",  sample_column = "Conditions")
+gen_immunarch(seu, proportion = "rm.na",  sample_column = "Conditions")
 }

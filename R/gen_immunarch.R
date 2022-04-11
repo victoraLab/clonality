@@ -11,7 +11,7 @@
 #' @import dplyr
 #' @importFrom gtools mixedsort
 #' @importFrom tidyr separate
-#' @exports
+#' @export
 #'
 
 gen_immunarch <- function(seu = seu, proportion = "rm.na",  sample_column = NULL, metadata_columns = NULL){
