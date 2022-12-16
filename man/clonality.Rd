@@ -7,42 +7,45 @@
 clonality(
   data = "example.xlsx",
   output = "output",
-  id_col = "Sequence_ID",
+  ident_col = "Sequence_ID",
   vgene_col = "V_GENE_and_allele",
   jgene_col = "J_GENE_and_allele",
   cdr3_col = "JUNCTION",
   cell = "T",
   output_original = FALSE,
-  mm = 0,
+  mismatch = 0,
   suffix = NULL,
-  search_gname = T
+  search_genename = TRUE,
+  stringdist_method = "osa"
 )
 }
 \arguments{
 \item{data}{A data frame object or the full path to a xlsx with repertoire data.}
 
-\item{output}{The output name. Default: output.}
+\item{output}{\code{Character}. The output name. Default: \code{output.}}
 
-\item{id_col}{The column with unique sequence IDs. Default: 'Sequence_ID'.}
+\item{ident_col}{\code{Character}. The column with unique sequence IDs. Default: \code{Sequence_ID}.}
 
-\item{vgene_col}{The column with V gene names. Default: 'V_GENE_and_allele'.}
+\item{vgene_col}{\code{Character}. The column with V gene names. Default: \code{V_GENE_and_allele}.}
 
-\item{jgene_col}{The column with J gene names. Default: 'J_GENE_and_allele'.}
+\item{jgene_col}{\code{Character}. The column with J gene names. Default: \code{J_GENE_and_allele}.}
 
-\item{cdr3_col}{The column with CDR3 sequences - nt/aa. Default: 'JUNCTION'.}
+\item{cdr3_col}{\code{Character}. The column with CDR3 sequences - nt/aa. Default: \code{JUNCTION}.}
 
-\item{cell}{Choose between T for T cell or B for B cell. Default: 'T'.}
+\item{cell}{\code{Character}. Choose T for T cell or B for B cell. Default: \code{T}.}
 
-\item{output_original}{If \code{TRUE}, output and input have same format. Default: 'FALSE'.}
+\item{output_original}{\code{Logical}. if\code{TRUE}, output and input have same format. Default: \code{FALSE}.}
 
-\item{mm}{Percent of mismatches allowed in subgroups. Default: 0}
+\item{mismatch}{\code{Numeric.} Percent of mismatches allowed in subgroups. \code{0 == most_stringent}, \code{1 == less_stringent}. Default: \code{0}}
 
-\item{suffix}{Character. String to be appended to the clonality ID.}
+\item{suffix}{\code{Character.} String to be appended to the clonality ID.}
 
-\item{search_gname}{Logical. Accepts IMGT nomenclature and simplify gene IDs. Default: 'TRUE'.}
+\item{search_genename}{\code{Logical.} Accepts IMGT nomenclature and simplify gene IDs. Default: \code{TRUE}.}
+
+\item{stringdist_method}{\code{Character.} Method for distance calculation. See \code{?stringdist-metrics} for more methods.}
 }
 \description{
-Returns the input table with the clonality annotations.
+The \pkg{clonality} package returns the input table with the clonality annotations.
 }
 \examples{
 clonality(data = tra)
