@@ -118,13 +118,13 @@ assigntenx <- function(list.pairs = list.pairs, method = method, clonality_input
     #Input default parameters for clonality
     if(length(clonality_input) == 0){
       clonality_input <- c(output = "Clonal.output.10x", vgene_col = "v_genes", jgene_col = "j_genes", cdr3_col = "CDR3",
-                           cell = "T", output_original = T,  id_col = "barcodes", mm = 0, search_gname = F)
+                           cell = "T", output_original = T,  ident_col = "barcodes", mismatch = 0, search_genename = F)
     }
 
     else{
 
       input <- c(output = "Clonal.output.10x", vgene_col = "v_genes", jgene_col = "j_genes", cdr3_col = "CDR3",
-                 cell = "T", output_original = T,  id_col = "barcodes", mm = 0, search_gname = F)
+                 cell = "T", output_original = T,  ident_col = "barcodes", mismatch = 0, search_genename = F)
 
       input[names(clonality_input)] <- clonality_input
 
@@ -139,9 +139,9 @@ assigntenx <- function(list.pairs = list.pairs, method = method, clonality_input
               cell = clonality_input["cell"],
               output_original = as.logical(clonality_input["output_original"]),
               suffix = i,
-              id_col = clonality_input["id_col"],
-              mm = as.numeric(clonality_input["mm"]),
-              search_gname = as.logical(clonality_input["search_gname"]))
+              ident_col = clonality_input["ident_col"],
+              mismatch = as.numeric(clonality_input["mismatch"]),
+              search_genename = as.logical(clonality_input["search_genename"]))
   }
 
 
