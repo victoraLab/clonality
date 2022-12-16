@@ -18,16 +18,16 @@ clonality(data =  tra, output =  "tra.output")
 ```
 
 On B cells:
-Running the function on a xlsx file containing BCR sequences and getting clonal subclusters (mm (Mismatch) parameter) that have up to 20% CDR3 differences based on the string aligment, (restricted Damerau-Levenshtein distance from stringdist package).
+Running the function on a xlsx file containing BCR sequences and getting clonal subclusters (mismatch parameter) that have up to 20% CDR3 differences based on the string aligment, (restricted Damerau-Levenshtein distance from stringdist package).
 
 ```R
 clonality(data = "example.xlsx",
-id_col = "Sequence_ID",
+ident_col = "Sequence_ID",
 vgene_col = "V_GENE_and_allele",
 jgene_col = "J_GENE_and_allele",
 cdr3_col = "AA_JUNCTION",
 cell = "B",
-mm = 0.2)
+mismatch = 0.2)
 ```
 
 On T cells:
@@ -35,12 +35,12 @@ Running the function on a xlsx file containing TCR sequences and without subclus
 
 ```R
 clonality(data = "example.xlsx",
-id_col = "Sequence_ID",
+ident_col = "Sequence_ID",
 vgene_col = "V_GENE_and_allele",
 jgene_col = "J_GENE_and_allele",
 cdr3_col = "AA_JUNCTION",
 cell = "T",
-mm = 0)
+mismatch = 0)
 ```
 
 The function can also be used on a data.frame like:
