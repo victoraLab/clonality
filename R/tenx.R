@@ -18,10 +18,20 @@
 #' @importFrom data.table rbindlist
 #' @export
 
-tenx <- function(data = NULL, method = "unique_paired", only_productive = T, only_true_cells = T, clonality_input = NULL, cell = "T", col_res = c("full"), save_files = F) {
+tenx <- function(data = NULL,
+                 method = "unique_paired",
+                 only_productive = T,
+                 only_true_cells = T,
+                 clonality_input = NULL,
+                 cell = "T",
+                 col_res = c("full"),
+                 save_files = F) {
 
     # Test parameters for correct input
-    if( !any(method %in% c("unique_paired", "sticky_ends", "unique_all")) ) stop('Method chosen not valid. Choose one of: unique_paired, sticky_ends, unique_all.')
+    if( !any(method %in% c("unique_paired", "sticky_ends", "unique_all")) ){
+      stop('Method chosen not valid.
+           Choose one of: unique_paired, sticky_ends, unique_all.')
+      }
 
     if(is.null(data) == T ){
         warning("No input. Running on example data.")
@@ -46,12 +56,14 @@ tenx <- function(data = NULL, method = "unique_paired", only_productive = T, onl
 
   #Accept only productive chains
     if(only_productive == T){
-        data <- data %>% filter(grepl("true", productive, ignore.case = TRUE), ignore.case = TRUE)
+      data <- data %>%
+        filter(grepl("true", productive, ignore.case = TRUE), ignore.case = TRUE)
     }
 
-    if(only_true_cells == T){
-    data <- data %>% filter(grepl("true", is_cell, ignore.case = TRUE), ignore.case = TRUE)
-    }
+  if(only_true_cells == T){
+    data <- data %>%
+      filter(grepl("true", is_cell, ignore.case = TRUE), ignore.case = TRUE)
+  }
 
 
     # Split the 10x dataframe based on each barcode.

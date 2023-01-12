@@ -8,7 +8,14 @@
 #' @export
 #'
 #'
-assigntenx <- function(list.pairs = list.pairs, method = method, clonality_input = clonality_input, cell = cell, col_res = col_res,  save_files = save_files){
+assigntenx <- function(list.pairs = list.pairs,
+                       method = method,
+                       clonality_input = clonality_input,
+                       cell = cell,
+                       col_res = col_res,
+                       save_files = save_files){
+
+
   #Define classes to be used
 
   if(method == "unique_all"){
@@ -68,6 +75,9 @@ assigntenx <- function(list.pairs = list.pairs, method = method, clonality_input
     #Concatenate all J-genes
     j_gene <- res.sub %>% ungroup() %>% select(starts_with("j_gene")) %>% tidyr::unite("j_gene", sep = "_") %>% pull(j_gene)
 
+    #Concatenate all C-genes
+    c_gene <- res.sub %>% ungroup() %>% select(starts_with("c_gene")) %>% tidyr::unite("c_gene", sep = "_") %>% pull(c_gene)
+
     #All J-genes separated
     j_genes_unique <- res.sub %>% ungroup() %>% select(starts_with("j_gene"))
 
@@ -92,6 +102,7 @@ assigntenx <- function(list.pairs = list.pairs, method = method, clonality_input
                           v_genes = v_gene,
                           v_genes_unique,
                           j_genes = j_gene,
+                          c_genes = c_gene,
                           j_genes_unique,
                           CDR3 = cdr3_col,
                           cdr3_col_unique,
