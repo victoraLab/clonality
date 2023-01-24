@@ -13,7 +13,8 @@ assigntenx <- function(list.pairs = list.pairs,
                        clonality_input = clonality_input,
                        cell = cell,
                        col_res = col_res,
-                       save_files = save_files){
+                       save_files = save_files,
+                       add_columns = add_columns){
 
 
   #Define classes to be used
@@ -96,6 +97,11 @@ assigntenx <- function(list.pairs = list.pairs,
     #Concatenate CDR3 nt length
     cdr3_length <- as.data.frame(apply(res.sub %>% ungroup() %>% select(starts_with("cdr3_nt")), MARGIN = 2, FUN = nchar)) %>% tidyr::unite("cdr3_length", sep = "_") %>% pull(cdr3_length)
 
+    #Selected columns
+    if(!is.null(add_columns)){
+      selected <- as.data.frame(apply(res.sub %>% ungroup() %>% select(add_columns), MARGIN = 2, FUN = nchar)) %>% tidyr::unite("added_columns", sep = ";") %>% pull(add_columns)
+    }
+
 
     #Create final metadata table
     df.full <- data.frame(barcodes = barcodes,
@@ -109,7 +115,8 @@ assigntenx <- function(list.pairs = list.pairs,
                           cdr3_col2 = cdr3_col2,
                           cdr3_col2_unique,
                           cdr3_length = cdr3_length,
-                          raw_clonotypes = raw_clonotypes)
+                          raw_clonotypes = raw_clonotypes,
+                          selected = selected)
 
     df.reduced <- data.frame(barcodes = barcodes,
                              v_genes = v_gene,
