@@ -12,7 +12,7 @@
 #' @param add_columns Character. Vector containing columns to add into the final result.
 #' @param save_files Logical. Whether to save the Cl matrices as xlsx files or not.
 #' @examples
-#' tenx(data = "filtered_contig_annotations", method = "sticky_ends", only_productive = T, clonality_input = c("mm" = 0.25), cell = "T",  save.files = F)
+#' tenx(data = "filtered_contig_annotations", method = "sticky_ends", only_productive = T, clonality_input = c("mismatch" = 0.25), cell = "T",  save.files = F)
 #' @import dplyr
 #' @importFrom stringr str_extract
 #' @importFrom openxlsx write.xlsx
