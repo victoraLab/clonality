@@ -9,6 +9,7 @@
 #' @param clonality_input Named vector. Input parameters for the clonality function.
 #' @param cell Character. Possible values: `B` Bcells, `T` Tcells, `Tgd` Gamma Delta T cells.
 #' @param col_res Character. Possible values: `full` paired and unique chain columns, `reduced` only paired chain columns.
+#' @param add_columns Character. Vector containing columns to add into the final result.
 #' @param save_files Logical. Whether to save the Cl matrices as xlsx files or not.
 #' @examples
 #' tenx(data = "filtered_contig_annotations", method = "sticky_ends", only_productive = T, clonality_input = c("mm" = 0.25), cell = "T",  save.files = F)
@@ -25,7 +26,8 @@ tenx <- function(data = NULL,
                  clonality_input = NULL,
                  cell = "T",
                  col_res = c("full"),
-                 save_files = F) {
+                 save_files = F,
+                 add_columns = NULL) {
 
     # Test parameters for correct input
     if( !any(method %in% c("unique_paired", "sticky_ends", "unique_all")) ){
@@ -91,6 +93,6 @@ tenx <- function(data = NULL,
         list.pairs[[i]] <- data.list[pairs[["Chains"]] == i]
     }
 
-    assigntenx(list.pairs = list.pairs, method = method, clonality_input = clonality_input, cell = cell, col_res = col_res, save_files = save_files)
+    assigntenx(list.pairs = list.pairs, method = method, clonality_input = clonality_input, cell = cell, col_res = col_res, save_files = save_files, add_columns = add_columns)
 
 }
