@@ -99,7 +99,15 @@ assigntenx <- function(list.pairs = list.pairs,
 
     #Selected columns
     if(!is.null(add_columns)){
-      selected <- as.data.frame(apply(res.sub %>% ungroup() %>% select(add_columns), MARGIN = 2, FUN = nchar)) %>% tidyr::unite("added_columns", sep = ";") %>% pull(add_columns)
+      selected_mat <- matrix(nrow = nrow(res.sub), ncol = length(add_columns))
+      colnames(selected_mat) <- add_columns
+      for(f in add_columns){
+        selected <- as.data.frame(apply(res.sub %>% ungroup() %>% select(starts_with(f)), MARGIN = 2, FUN = nchar)) %>% tidyr::unite(col = "col", sep = ";") %>% pull(col)
+        selected_mat[,f] <- selected
+      }
+
+    }else{
+      selected <- NA
     }
 
 
@@ -116,7 +124,7 @@ assigntenx <- function(list.pairs = list.pairs,
                           cdr3_col2_unique,
                           cdr3_length = cdr3_length,
                           raw_clonotypes = raw_clonotypes,
-                          selected = selected)
+                          selected = selected_mat)
 
     df.reduced <- data.frame(barcodes = barcodes,
                              v_genes = v_gene,
@@ -125,6 +133,10 @@ assigntenx <- function(list.pairs = list.pairs,
                              cdr3_col2 = cdr3_col2,
                              cdr3_length = cdr3_length,
                              raw_clonotypes = raw_clonotypes)
+
+    if(all(is.na(df.full$selected))){
+      df.full$selected <- NULL
+    }
 
     df1 <- switch(col_res, "full" = df.full, "reduced" = df.reduced)
 
