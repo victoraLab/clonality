@@ -12,33 +12,8 @@ imgt.header
 }
 \arguments{
 \item{data}{A data frame object or the full path to a xlsx with repertoire data.}
-
-\item{output}{The output name. Default: output.}
-
-\item{ident_col}{The column with unique sequence IDs. Default: 'Sequence_ID'.}
-
-\item{vgene_col}{The column with V gene names. Default: 'V_GENE_and_allele'.}
-
-\item{jgene_col}{The column with J gene names. Default: 'J_GENE_and_allele'.}
-
-\item{cdr3_col}{The column with CDR3 sequences - nt/aa. Default: 'JUNCTION'.}
-
-\item{cell}{Choose between T for T cell or B for B cell. Default: 'T'.}
-
-\item{output_original}{If \code{TRUE}, output and input have same format. Default: 'FALSE'.}
-
-\item{mm}{Percent of mismatches allowed in subgroups. Default: 0}
-
-\item{suffix}{Character. String to be appended to the clonality ID.}
-
-\item{search_gname}{Logical. Accepts IMGT nomenclature and simplify gene IDs. Default: 'TRUE'.}
 }
 \description{
 Returns the input table with the clonality annotations.
-}
-\examples{
-clonality(data = tra)
-clonality(data = trb)
-clonality(data = 'example.xlsx')
 }
 \keyword{datasets}
