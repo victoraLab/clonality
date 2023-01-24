@@ -12,7 +12,8 @@ tenx(
   clonality_input = NULL,
   cell = "T",
   col_res = c("full"),
-  save_files = F
+  save_files = F,
+  add_columns = NULL
 )
 }
 \arguments{
@@ -31,6 +32,8 @@ tenx(
 \item{col_res}{Character. Possible values: \code{full} paired and unique chain columns, \code{reduced} only paired chain columns.}
 
 \item{save_files}{Logical. Whether to save the Cl matrices as xlsx files or not.}
+
+\item{add_columns}{Character. Vector containing columns to add into the final result.}
 }
 \description{
 Returns the input with clonality annotation column with clonal definitions.
