@@ -39,7 +39,7 @@ assigntenx <- function(list.pairs = list.pairs,
   # Concatenate each element of the list into a list of lists
   # Transform it into a data frame with 1 cell per row
   res <- do.call(c, list.pairs_filt)
-  res <- lapply(res, row1)
+  res <- lapply(res, FUN = row1, add_columns)
   res <- bind_rows(res, .id = "classes")
 
   #Extract chain

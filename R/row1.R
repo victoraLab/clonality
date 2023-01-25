@@ -2,8 +2,8 @@
 #' @importFrom tidyr pivot_wider
 #' @export
 #'
-row1 <- function(x, selected = c("v_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "chain", "raw_clonotype_id", "barcode", add_columns)) {
-  x <- x %>% select(selected)
+row1 <- function(x, add_columns) {
+  x <- x %>% select(c("v_gene", "j_gene", "c_gene", "cdr3", "cdr3_nt", "chain", "raw_clonotype_id", "barcode", add_columns = add_columns))
   x[["chain"]] <- make.unique(x[["chain"]])
   x[["barcode"]] <- make.unique(x[["barcode"]])
   x %>%
