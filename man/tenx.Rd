@@ -39,5 +39,5 @@ tenx(
 Returns the input with clonality annotation column with clonal definitions.
 }
 \examples{
-tenx(data = "filtered_contig_annotations", method = "sticky_ends", only_productive = T, clonality_input = c("mm" = 0.25), cell = "T",  save.files = F)
+tenx(data = "filtered_contig_annotations", method = "sticky_ends", only_productive = T, clonality_input = c("mismatch" = 0.25), cell = "T",  save.files = F)
 }
