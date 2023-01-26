@@ -116,7 +116,10 @@ add_seurat_metadata <- function(seu = NULL, clonal.list = ls(pattern = "^Clonal"
   c0 <- bind_rows(c1,c2,c3)
   colnames(c0) <- paste0("Res_", colnames(c0))
   rownames(c0) <- c0[["Res_barcodes"]]
+
+  if(sticky == T){
   c0$Res_clonality.correction[is.na(c0$Res_clonality.correction)] <- "Not tested"
+  }
 
   if(overwrite == T){
     seu@meta.data <- seu@meta.data %>% select(-contains("Res_"))
