@@ -101,8 +101,9 @@ assigntenx <- function(list.pairs = list.pairs,
     if(!is.null(add_columns)){
       selected_mat <- matrix(nrow = nrow(res.sub), ncol = length(add_columns))
       colnames(selected_mat) <- add_columns
+      selected_mat <- as.data.frame(selected_mat)
       for(f in add_columns){
-        selected <- as.data.frame(apply(res.sub %>% ungroup() %>% select(starts_with(f)), MARGIN = 2, FUN = nchar)) %>% tidyr::unite(col = "col", sep = ";") %>% pull(col)
+        selected <- as.data.frame(res.sub %>% ungroup() %>% select(starts_with(f))) %>% tidyr::unite(col = "col", sep = ";") %>% pull(col)
         selected_mat[,f] <- selected
       }
 
@@ -149,9 +150,7 @@ assigntenx <- function(list.pairs = list.pairs,
     if(length(clonality_input) == 0){
       clonality_input <- c(output = "Clonal.output.10x", vgene_col = "v_genes", jgene_col = "j_genes", cdr3_col = "CDR3",
                            cell = "T", output_original = T,  ident_col = "barcodes", mismatch = 0, search_genename = F)
-    }
-
-    else{
+    } else{
 
       input <- c(output = "Clonal.output.10x", vgene_col = "v_genes", jgene_col = "j_genes", cdr3_col = "CDR3",
                  cell = "T", output_original = T,  ident_col = "barcodes", mismatch = 0, search_genename = F)
