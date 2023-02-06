@@ -15,7 +15,14 @@
 #' @export
 #'
 #'
-add_seurat_metadata <- function(seu = NULL, clonal.list = ls(pattern = "^Clonal", envir = .GlobalEnv), cdr3_map = "cdr3_col2", cell = "T", purity = 0.8, stick_only = "all", sticky = FALSE, overwrite = T){
+add_seurat_metadata <- function(seu = NULL,
+                                clonal.list = ls(pattern = "^Clonal", envir = .GlobalEnv),
+                                cdr3_map = "cdr3_col2",
+                                cell = "T",
+                                purity = 0.8,
+                                stick_only = "all",
+                                sticky = FALSE,
+                                overwrite = T){
 
   #Seu parameter is mandatory
   if(is.null(seu)){stop("Please add Seurat object to merge clonality.")}
