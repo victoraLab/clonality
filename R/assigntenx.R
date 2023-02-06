@@ -56,6 +56,9 @@ assigntenx <- function(list.pairs = list.pairs,
   #Function to remove columns with all rows = NA
   all_na <- function(x) any(!is.na(x))
 
+  classes.keep <- names(table(res$classes))[table(res$classes) > 1]
+  res <- res %>% filter(classes %in% classes.keep)
+
   #Apply this procedures to each class separately
   for (i in unique(res$classes)) {
 
@@ -108,7 +111,7 @@ assigntenx <- function(list.pairs = list.pairs,
       }
 
     }else{
-      selected <- NA
+      selected_mat <- NA
     }
 
 
