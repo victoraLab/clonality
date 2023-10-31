@@ -8,7 +8,7 @@ The clonality package function helps to define B or T cell repertoire clonality 
 devtools::install_github("victoraLab/clonality")
 ```
 
-# How to use:
+# How to use it:
 
 The tra and trb objects are small sequencing datasets that can be used as a test
 
