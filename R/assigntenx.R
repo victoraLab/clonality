@@ -144,7 +144,6 @@ assigntenx <- function(list.pairs = list.pairs,
 
     df1 <- switch(col_res, "full" = df.full, "reduced" = df.reduced)
 
-
     #If 2 or more chains are solutions for the same cell
     df1$v_genes <- gsub("\\+", ";", df1$v_genes)
     df1$j_genes <- gsub("\\+", ";", df1$j_genes)

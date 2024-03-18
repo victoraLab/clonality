@@ -53,19 +53,49 @@ tenx <- function(data = NULL,
         }
     }
 
-  #Remove empty but not NA, CDR3s
+  #Remove empty CDR3s
   data <- data[data$cdr3_nt != "",]
 
-  #Accept only productive chains
+  #Remove NA CDR3s
+  data <- data[!is.na(data$cdr3_nt),]
+
+  if(cell %in% c("T", "B")){
+    #Accept only productive chains
     if(only_productive == T){
       data <- data %>%
         filter(grepl("true", productive, ignore.case = TRUE), ignore.case = TRUE)
     }
 
-  if(only_true_cells == T){
-    data <- data %>%
-      filter(grepl("true", is_cell, ignore.case = TRUE), ignore.case = TRUE)
+    if(only_true_cells == T){
+      data <- data %>%
+        filter(grepl("true", is_cell, ignore.case = TRUE), ignore.case = TRUE)
+    }
   }
+
+
+
+  #Treats Gamma Delta datasets differently
+
+  if(cell == "Tgd"){
+      #Accept only productive chains
+      if(only_productive == T){
+        data <- data %>%
+          filter(grepl("true", productive, ignore.case = TRUE), ignore.case = TRUE)
+      }
+
+      if(only_true_cells == T){
+        data <- data %>%
+          filter(grepl("true", is_cell, ignore.case = TRUE), ignore.case = TRUE)
+      }
+
+
+      data$chain[grep("TRA", data$chain)] <- "TRD"
+
+      data <- data[grep("\\*", data$cdr3, value = F, invert = T),]
+
+  }
+
+
 
 
     # Split the 10x dataframe based on each barcode.
