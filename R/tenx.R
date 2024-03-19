@@ -89,13 +89,13 @@ tenx <- function(data = NULL,
       }
 
 
-      data$chain[grep("TRA", data$chain)] <- "TRD"
+    data <- data %>%
+      mutate(chain = ifelse(grepl("TRA", chain), "TRD", chain)) %>%
+      filter(chain != "None")
 
       data <- data[grep("\\*", data$cdr3, value = F, invert = T),]
 
   }
-
-
 
 
     # Split the 10x dataframe based on each barcode.
