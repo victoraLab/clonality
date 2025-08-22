@@ -59,7 +59,9 @@ plot_plate_contig_depth(plate_metadata, plate_id = "P01")
 
 ![Contig Depth Plot](man/figures/contig_depth_plot2.png)
 
-# Example dataset included in the package
+# 10x Genomics Example Pipelines
+
+## Example dataset included in the package
 
 ```
 
@@ -75,8 +77,6 @@ tenx(
   cellranger_version = 9
 )
 ```
-
-## 10x Genomics Example Pipelines
 
 ### BCR clonality (Cell Ranger v7 output)
 
@@ -95,6 +95,7 @@ tenx_out <- tenx(
   cellranger_version = 7
 )
 ```
+
 The result is a clonality-annotated metadata table separated by class
 
 ### TCR clonality (Cell Ranger v3 output)
