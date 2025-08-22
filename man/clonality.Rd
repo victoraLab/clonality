@@ -2,53 +2,74 @@
 % Please edit documentation in R/clonality.R
 \name{clonality}
 \alias{clonality}
-\title{Annotate clonality}
+\title{Annotate Clonality in Immune Repertoire Data}
 \usage{
 clonality(
   data = "example.xlsx",
   output = "output",
   ident_col = "Sequence_ID",
-  vgene_col = "V_GENE_and_allele",
-  jgene_col = "J_GENE_and_allele",
+  vgene_col = "VGENE_and_allele",
+  jgene_col = "JGENE_and_allele",
   cdr3_col = "JUNCTION",
   cell = "T",
   output_original = FALSE,
   mismatch = 0,
   suffix = NULL,
-  search_genename = TRUE,
-  stringdist_method = "osa"
+  filter_IMGT_sequences = FALSE,
+  stringdist_method = "osa",
+  project = "project",
+  ...
 )
 }
 \arguments{
-\item{data}{A data frame object or the full path to a xlsx with repertoire data.}
+\item{data}{A data frame or a file path to a \code{.xlsx} file containing repertoire data.}
 
-\item{output}{\code{Character}. The output name. Default: \code{output.}}
+\item{output}{\code{Character}. The name of the output variable or file. Default: "output".}
 
-\item{ident_col}{\code{Character}. The column with unique sequence IDs. Default: \code{Sequence_ID}.}
+\item{ident_col}{\code{Character}. The name of the column containing unique identifiers. Default: "Sequence_ID".}
 
-\item{vgene_col}{\code{Character}. The column with V gene names. Default: \code{V_GENE_and_allele}.}
+\item{vgene_col}{\code{Character}. The name of the column containing V gene annotations. Default: "VGENE_and_allele".}
 
-\item{jgene_col}{\code{Character}. The column with J gene names. Default: \code{J_GENE_and_allele}.}
+\item{jgene_col}{\code{Character}. The name of the column containing J gene annotations. Default: "JGENE_and_allele".}
 
-\item{cdr3_col}{\code{Character}. The column with CDR3 sequences - nt/aa. Default: \code{JUNCTION}.}
+\item{cdr3_col}{\code{Character}. The name of the column containing CDR3 sequences. Default: "JUNCTION".}
 
-\item{cell}{\code{Character}. Choose T for T cell or B for B cell. Default: \code{T}.}
+\item{cell}{\code{Character}. One of "T" or "B". Specifies T cell or B cell data. Default: "T".}
 
-\item{output_original}{\code{Logical}. if\code{TRUE}, output and input have same format. Default: \code{FALSE}.}
+\item{output_original}{\code{Logical}. If \code{TRUE}, joins results to the original input. Default: \code{FALSE}.}
 
-\item{mismatch}{\code{Numeric.} Percent of mismatches allowed in subgroups. \code{0 == most_stringent}, \code{1 == less_stringent}. Default: \code{0}}
+\item{mismatch}{\code{Numeric}. Percent similarity threshold used to define clonality clusters (range: 0–100).
+This defines the maximum allowable difference (as a percentage of CDR3 sequence length) within a clone.
+\itemize{
+\item A value of \code{0} means \strong{no differences allowed} (strict clustering: only identical sequences cluster).
+\item A value of \code{100} means \strong{any difference is allowed} (loose clustering: sequences are not subclustered).
+Internally used to calculate clustering height: \code{hclust_height = mismatch / 100}.
+}}
 
-\item{suffix}{\code{Character.} String to be appended to the clonality ID.}
+\item{suffix}{\code{Character}. A string to append to the clonality group IDs.}
 
-\item{search_genename}{\code{Logical.} Accepts IMGT nomenclature and simplify gene IDs. Default: \code{TRUE}.}
+\item{filter_IMGT_sequences}{\code{Logical}. Whether to filter for productive IMGT CDR3 sequences. Default: \code{FALSE}.}
 
-\item{stringdist_method}{\code{Character.} Method for distance calculation. See \code{?stringdist-metrics} for more methods.}
+\item{stringdist_method}{String distance method passed to \code{stringdist()}.
+Defaults to "osa" (Optimal String Alignment). Other options include:
+"lv", "dl", "hamming", "lcs", "qgram", "cosine", "jaccard",
+"jw" (Jaro-Winkler), and "soundex". See \code{?stringdist::stringdist} for details.}
+
+\item{project}{\code{Character}. Optional label to assign to all rows in the resulting data frame to identify the project or dataset. If not provided, defaults to "project".}
+
+\item{...}{Additional arguments passed to \code{read_repertoire()}.}
+}
+\value{
+A data frame with a \code{clonality} column added, or written to disk if input is a file.
 }
 \description{
-The \pkg{clonality} package returns the input table with the clonality annotations.
+Identifies clonal groups based on V gene, J gene, and CDR3 sequence similarity.
+Sequences with identical V-J-CDR3 length combinations are clustered using hierarchical clustering.
+Can return a full joined data frame or a simplified annotated output.
 }
 \examples{
-clonality(data = tra)
-clonality(data = trb)
-clonality(data = 'example.xlsx')
+clonality(data = tra, vgene_col = "V_GENE_and_allele", jgene_col = "J_GENE_and_allele")
+clonality(data = trb, output = "clones", vgene_col = "V_GENE_and_allele", jgene_col = "J_GENE_and_allele")
+clonality(data = IMGT_TCR_Summary_File, cdr3_col  = "DNA_Junction")
+
 }

@@ -1,128 +1,100 @@
-#' Annotate 10x clones
+#' Annotate 10x clones with clonality information
 #'
-#' Returns the input with clonality annotation column with clonal definitions.
+#' Loads and processes 10x Genomics V(D)J output (either as a data frame, file path, or object name), filters and groups by cell barcode, and assigns clonal definitions.
 #'
-#' @param data Character. Data frame object or the full path to a filtered_contig_annotations.csv file.
-#' @param method Character. One of: unique_paired, unique_all, sticky_ends. Default: unique_paired.
-#' @param only_productive Logical. Filter non productive chains.
-#' @param only_true_cells Logical. Filter low quality / non true cells. Using the default `TRUE` with the all_contig_annotations.csv file is equivalent of just running on the filtered_contig_annotations.csv.
-#' @param clonality_input Named vector. Input parameters for the clonality function.
-#' @param cell Character. Possible values: `B` Bcells, `T` Tcells, `Tgd` Gamma Delta T cells.
-#' @param col_res Character. Possible values: `full` paired and unique chain columns, `reduced` only paired chain columns.
-#' @param add_columns Character. Vector containing columns to add into the final result.
-#' @param save_files Logical. Whether to save the Cl matrices as xlsx files or not.
+#' Supports BCR, TCR, and γδ TCR data from Cell Ranger versions 3 (18 columns) and 7 (31 columns).
+#'
+#' @param data Data frame, character string (object name), or full path to a `filtered_contig_annotations.csv` or `all_contig_annotations.csv` file.
+#' @param method Character. Clonality inference method. One of: `"unique_paired"`, `"sticky_ends"`, `"unique_all"`. Default is `"unique_paired"`.
+#' @param only_productive Logical. Whether to filter non-productive chains. Default is `TRUE`.
+#' @param only_true_cells Logical. Whether to filter out low-quality/non-true cells (i.e., `is_cell != TRUE`). Default is `TRUE`.
+#' @param clonality_input Named vector. Parameters passed to the internal `clonality()` function (e.g., mismatch thresholds).
+#' @param cell Character. Cell type to process. One of: `"B"` (B cells), `"T"` (T cells), `"Tgd"` (γδ T cells). Default is `"T"`.
+#' @param col_res Character. Either `"full"` to retain all chain columns, or `"reduced"` to include only paired chains. Default is `"full"`.
+#' @param add_columns Character vector. Additional metadata columns to include in the output. Optional.
+#' @param cellranger_version Integer. Expected Cell Ranger version (used for validation): `3` (18 columns) or `7` (31 columns) or `9` (32 columns). Default is `7`.
+
+#'
+#' @return Annotated clonality matrix with clonal group information, invisibly returned after internal call to `assigntenx()`.
+#'
 #' @examples
-#' tenx(data = "filtered_contig_annotations", method = "sticky_ends", only_productive = T, clonality_input = c("mismatch" = 0.25), cell = "T",  save.files = F)
+#' tenx(data = Cellranger3_TCR, method = "unique_paired", cell = "T", clonality_input = c(mismatch = 20), cellranger_version = 3, )
+#' tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B", only_productive = TRUE)
+#'
 #' @import dplyr
 #' @importFrom stringr str_extract
 #' @importFrom openxlsx write.xlsx
 #' @importFrom data.table rbindlist
 #' @export
-
 tenx <- function(data = NULL,
                  method = "unique_paired",
-                 only_productive = T,
-                 only_true_cells = T,
+                 only_productive = TRUE,
+                 only_true_cells = TRUE,
                  clonality_input = NULL,
-                 cell = "T",
+                 cell = "B",
                  col_res = c("full"),
-                 save_files = F,
-                 add_columns = NULL) {
+                 add_columns = NULL,
+                 cellranger_version = 7) {
 
-    # Test parameters for correct input
-    if( !any(method %in% c("unique_paired", "sticky_ends", "unique_all")) ){
-      stop('Method chosen not valid.
-           Choose one of: unique_paired, sticky_ends, unique_all.')
-      }
-
-    if(is.null(data) == T ){
-        warning("No input. Running on example data.")
-        data <- filtered_contig_annotations
-    }
-
-
-
-    if(!is.data.frame(data)){
-        # Extract extension
-        ext <- gsub("^.*\\.", "", data)
-
-        if(!is.na(ext)){
-            data <- read.csv(data)
-        }else{
-            data <- get(data)
-        }
-    }
-
-  #Remove empty CDR3s
-  data <- data[data$cdr3_nt != "",]
-
-  #Remove NA CDR3s
-  data <- data[!is.na(data$cdr3_nt),]
-
-  if(cell %in% c("T", "B")){
-    #Accept only productive chains
-    if(only_productive == T){
-      data <- data %>%
-        filter(grepl("true", productive, ignore.case = TRUE), ignore.case = TRUE)
-    }
-
-    if(only_true_cells == T){
-      data <- data %>%
-        filter(grepl("true", is_cell, ignore.case = TRUE), ignore.case = TRUE)
-    }
+  # Validate method
+  if (!method %in% c("unique_paired", "sticky_ends", "unique_all")) {
+    stop("Method chosen not valid. Choose one of: unique_paired, sticky_ends, unique_all.")
   }
 
+  # Use example fallback if NULL
+  if (is.null(data)) {
+    warning("No input. Running on example data.")
+    data <- Cellranger7_BCR1
+  }
 
+  # Validate and load data using the parser
+  data <- cellranger_version_parser(data, cellranger_version = cellranger_version)
 
-  #Treats Gamma Delta datasets differently
+  # Remove empty or NA CDR3s
+  data <- data[data$cdr3_nt != "" & !is.na(data$cdr3_nt), ]
 
-  if(cell == "Tgd"){
-      #Accept only productive chains
-      if(only_productive == T){
-        data <- data %>%
-          filter(grepl("true", productive, ignore.case = TRUE), ignore.case = TRUE)
-      }
+  # Apply shared chain filters (productive / true cells) for all cell types
+  if (only_productive) {
+    data <- dplyr::filter(data, grepl("true", productive, ignore.case = TRUE))
+  }
 
-      if(only_true_cells == T){
-        data <- data %>%
-          filter(grepl("true", is_cell, ignore.case = TRUE), ignore.case = TRUE)
-      }
+  if (only_true_cells) {
+    data <- dplyr::filter(data, grepl("true", is_cell, ignore.case = TRUE))
+  }
 
-
+  # Special handling for gamma-delta T cells
+  if (cell == "Tgd") {
     data <- data %>%
-      mutate(chain = ifelse(grepl("TRA", chain), "TRD", chain)) %>%
-      filter(chain != "None")
-
-      data <- data[grep("\\*", data$cdr3, value = F, invert = T),]
-
+      filter(chain != "None", !grepl("\\*", cdr3))
   }
 
+  # Split by barcode and organize chains
+  data.list <- split(data, data[["barcode"]])
 
-    # Split the 10x dataframe based on each barcode.
-    data.list <- split(data, f = data[["barcode"]])
+  sort.list <- function(x) x[order(x[["chain"]]), ]
+  group.chains <- function(x) paste(x[["chain"]], collapse = "_")
 
-    # This function sorts barcodes to align paired chains.
-    sort.list <- function(x) {
-        return(x[order(x[["chain"]]), ])
-    }
+  # Sort chains to sync all data.frames
+  data.list <- lapply(data.list, sort.list)
 
-    # Creates a tag with the paired type for each cell barcode
-    group.chains <- function(x) {
-        paste(x[["chain"]], collapse = "_")
-    }
+  # Extract chain classes per barcode
+  pairs <- data.frame(Chains = unlist(lapply(data.list, group.chains)))
 
-    # Apply sort.list function
-    data.list <- lapply(data.list, sort.list)
+  #Define empty variable
+  list.pairs <- list()
 
-    # Create the pair tag
-    pairs <- data.frame(Chains = unlist(lapply(data.list, group.chains)))
+  # Group chains from the same chain class together
+  for (i in unique(pairs$Chains)) {
+    list.pairs[[i]] <- data.list[pairs$Chains == i]
+  }
 
-    list.pairs <- list()
-
-    for (i in unique(pairs)[["Chains"]]) {
-        list.pairs[[i]] <- data.list[pairs[["Chains"]] == i]
-    }
-
-    assigntenx(list.pairs = list.pairs, method = method, clonality_input = clonality_input, cell = cell, col_res = col_res, save_files = save_files, add_columns = add_columns)
-
+  # Run clonality assignment per chain class
+  assigntenx(
+    list.pairs = list.pairs,
+    method = method,
+    clonality_input = clonality_input,
+    cell = cell,
+    col_res = col_res,
+    add_columns = add_columns
+  )
 }

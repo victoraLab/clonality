@@ -2,42 +2,50 @@
 % Please edit documentation in R/tenx.R
 \name{tenx}
 \alias{tenx}
-\title{Annotate 10x clones}
+\title{Annotate 10x clones with clonality information}
 \usage{
 tenx(
   data = NULL,
   method = "unique_paired",
-  only_productive = T,
-  only_true_cells = T,
+  only_productive = TRUE,
+  only_true_cells = TRUE,
   clonality_input = NULL,
-  cell = "T",
+  cell = "B",
   col_res = c("full"),
-  save_files = F,
-  add_columns = NULL
+  add_columns = NULL,
+  cellranger_version = 7
 )
 }
 \arguments{
-\item{data}{Character. Data frame object or the full path to a filtered_contig_annotations.csv file.}
+\item{data}{Data frame, character string (object name), or full path to a \code{filtered_contig_annotations.csv} or \code{all_contig_annotations.csv} file.}
 
-\item{method}{Character. One of: unique_paired, unique_all, sticky_ends. Default: unique_paired.}
+\item{method}{Character. Clonality inference method. One of: \code{"unique_paired"}, \code{"sticky_ends"}, \code{"unique_all"}. Default is \code{"unique_paired"}.}
 
-\item{only_productive}{Logical. Filter non productive chains.}
+\item{only_productive}{Logical. Whether to filter non-productive chains. Default is \code{TRUE}.}
 
-\item{only_true_cells}{Logical. Filter low quality / non true cells. Using the default \code{TRUE} with the all_contig_annotations.csv file is equivalent of just running on the filtered_contig_annotations.csv.}
+\item{only_true_cells}{Logical. Whether to filter out low-quality/non-true cells (i.e., \code{is_cell != TRUE}). Default is \code{TRUE}.}
 
-\item{clonality_input}{Named vector. Input parameters for the clonality function.}
+\item{clonality_input}{Named vector. Parameters passed to the internal \code{clonality()} function (e.g., mismatch thresholds).}
 
-\item{cell}{Character. Possible values: \code{B} Bcells, \code{T} Tcells, \code{Tgd} Gamma Delta T cells.}
+\item{cell}{Character. Cell type to process. One of: \code{"B"} (B cells), \code{"T"} (T cells), \code{"Tgd"} (γδ T cells). Default is \code{"T"}.}
 
-\item{col_res}{Character. Possible values: \code{full} paired and unique chain columns, \code{reduced} only paired chain columns.}
+\item{col_res}{Character. Either \code{"full"} to retain all chain columns, or \code{"reduced"} to include only paired chains. Default is \code{"full"}.}
 
-\item{save_files}{Logical. Whether to save the Cl matrices as xlsx files or not.}
+\item{add_columns}{Character vector. Additional metadata columns to include in the output. Optional.}
 
-\item{add_columns}{Character. Vector containing columns to add into the final result.}
+\item{cellranger_version}{Integer. Expected Cell Ranger version (used for validation): \code{3} (18 columns) or \code{7} (31 columns) or \code{9} (32 columns). Default is \code{7}.}
+}
+\value{
+Annotated clonality matrix with clonal group information, invisibly returned after internal call to \code{assigntenx()}.
 }
 \description{
-Returns the input with clonality annotation column with clonal definitions.
+Loads and processes 10x Genomics V(D)J output (either as a data frame, file path, or object name), filters and groups by cell barcode, and assigns clonal definitions.
+}
+\details{
+Supports BCR, TCR, and γδ TCR data from Cell Ranger versions 3 (18 columns) and 7 (31 columns).
 }
 \examples{
-tenx(data = "filtered_contig_annotations", method = "sticky_ends", only_productive = T, clonality_input = c("mismatch" = 0.25), cell = "T",  save.files = F)
+tenx(data = Cellranger3_TCR, method = "unique_paired", cell = "T", clonality_input = c(mismatch = 20), cellranger_version = 3, )
+tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B", only_productive = TRUE)
+
 }
