@@ -12,6 +12,7 @@
 #' @param overwrite Logical. Whether to overwrite clonality columns from seurat.
 
 #' @importFrom stringr str_count
+#' @importFrom Seurat AddMetaData
 #' @export
 #'
 #'
@@ -121,7 +122,9 @@ add_seurat_metadata <- function(seu = NULL,
 
   #Merge all clonotype tables
   c0 <- bind_rows(c1,c2,c3)
+  c0 <- as.data.frame(c0)
   colnames(c0) <- paste0("Res_", colnames(c0))
+  c0 <- as.data.frame(c0)
   rownames(c0) <- c0[["Res_barcodes"]]
 
   if(sticky == T){

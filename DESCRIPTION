@@ -1,6 +1,6 @@
 Package: clonality
 Title: Easily Define Groups Of T/B Cells
-Version: 0.0.0.6
+Version: 0.0.0.7
 Authors@R: 
     person(given = "Tiago Bruno",
            family = "Rezende de Castro",
@@ -13,16 +13,16 @@ License: `use_mit_license()`, `use_gpl3_license()` or friends to
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.1
+RoxygenNote: 7.3.2
 Imports: 
     stringdist,
     readxl,
     stringr,
     dplyr,
-    safejoin,
+    safejoin (>= 0.1.0),
     gtools
 Depends: 
-    R (>= 2.10)
+    R (>= 3.5)
 Remotes:
     moodymudskipper/safejoin
 Suggests: 

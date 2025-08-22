@@ -1,6 +1,8 @@
 #clonality
 
-The clonality package function helps to define B or T cell repertoire clonality automatically.
+clonality is an R package for automated clonotype assignment of B or T cell receptor sequences.
+It helps identify clonal relationships based on V gene, J gene, and CDR3 similarity, including optional fuzzy subclustering.
+Also, it supports various data formats including IMGT output and 10x Genomics filtered_contig_annotations.tsv.
 
 #Instalation:
 
@@ -14,48 +16,38 @@ The tra and trb objects are small sequencing datasets that can be used as a test
 
 ```R
 head(tra)
-clonality(data =  tra, output =  "tra.output")
+clonality(data = tra, output = "tra.output", vgene_col = "V_GENE_and_allele", jgene_col = "J_GENE_and_allele")
 ```
 
-On B cells:
-Running the function on a xlsx file containing BCR sequences and getting clonal subclusters (mismatch parameter) that have up to 20% CDR3 differences based on the string aligment, (restricted Damerau-Levenshtein distance from stringdist package).
+BCR Example Pipeline (with IMGT dataset)
 
 ```R
-clonality(data = "example.xlsx",
-ident_col = "Sequence_ID",
-vgene_col = "V_GENE_and_allele",
-jgene_col = "J_GENE_and_allele",
-cdr3_col = "AA_JUNCTION",
-cell = "B",
-mismatch = 0.2)
+clonality(data = IMGT_BCR_Summary_File, cdr3_col = "DNA_Junction", cell = "B", mismatch = 90)
+
+analysed_contigs <- analyze_well_contigs(output, barcode_format = "WELL_PLATE")
+
+plate_metadata <- extract_plate_metadata(df = analysed_contigs$real_contigs_input, barcode_format = "WELL_PLATE")
+
+plate_quality <- evaluate_plate_quality(analysed_contigs)
+
+plot_plate_contig_depth(plate_metadata, plate_id = "P09")
+![Contig Depth Plot](man/figures/contig_depth_plot1.png)
 ```
 
-On T cells:
-Running the function on a xlsx file containing TCR sequences and without subclustering, only identical sequences based on V gene, J gene, and CDR3 sequence will cluster.
+TCR Example Pipeline (with IMGT dataset)
 
 ```R
-clonality(data = "example.xlsx",
-ident_col = "Sequence_ID",
-vgene_col = "V_GENE_and_allele",
-jgene_col = "J_GENE_and_allele",
-cdr3_col = "AA_JUNCTION",
-cell = "T",
-mismatch = 0)
-```
+clonality(data = IMGT_TCR_Summary_File, cdr3_col = "DNA_Junction", cell = "T")
 
-The function can also be used on a data.frame like:
+analysed_contigs <- analyze_well_contigs(output, barcode_format = "PLATE_WELL")
 
-```R
-clonality(data = my_tcr, output = "output")
-```
+plate_metadata <- extract_plate_metadata(df = analysed_contigs$real_contigs_input, barcode_format = "PLATE_WELL")
 
-This package also has a function to call and import clonality on the `filtered_contig_annotations` file from 10x genomics experiments.
+plate_quality <- evaluate_plate_quality(analysed_contigs)
 
-Use the `sticky` parameter = `TRUE` to map cells with only one chain to cells with the paired sequence. 
+plot_plate_contig_depth(plate_metadata, plate_id = "P01")
 
-```R
-tenx(data = filtered_contig_annotations, method = "sticky_ends", cell = "T", only_productive = T)
-seu <- add_seurat_metadata(seu = singlets,  clonal.list = ls(pattern = "^Clonal"), sticky = T, purity = 0.8)
+![Contig Depth Plot](man/figures/contig_depth_plot2.png)
 ```
 
 

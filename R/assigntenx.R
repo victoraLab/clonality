@@ -13,31 +13,65 @@ assigntenx <- function(list.pairs = list.pairs,
                        clonality_input = clonality_input,
                        cell = cell,
                        col_res = col_res,
-                       save_files = save_files,
                        add_columns = add_columns){
 
 
-  #Define classes to be used
+  #Define classes to be used or discard
 
   if(method == "unique_all"){
     classes <- names(list.pairs)
     classes <- classes[!grepl("None", classes)]
   } else{
-    classes.list    <- switch(method, unique_paired = cell.classes$unique_paired,
-                              sticky_ends = cell.classes$sticky_ends)
+    classes.list    <- switch(method,
+                              unique_paired = chain_classes$unique_paired,
+                              sticky_ends = chain_classes$sticky_ends)
 
-    classes         <- switch(cell, "B"   = classes.list$  BCell.classes,
+    classes         <- switch(cell, "B"   = classes.list$BigCell.classes,
                                     "T"   = classes.list$TabCell.classes,
                                     "Tgd" = classes.list$TgdCell.classes)
   }
 
   cdr3.match <- switch(cell, "B" = "cdr3_IG", "T" = "cdr3_TR", "Tgd" = "cdr3_TR")
 
-  # Filter the classes to be used
+  # Tabulate all detected chain classes and report the stats
+
+  class_counts <- data.frame(
+    ChainClass = names(list.pairs),
+    Count = unlist(lapply(list.pairs, length)),
+    stringsAsFactors = FALSE) %>%
+    dplyr::arrange(nchar(ChainClass), ChainClass)
+
+  class_counts <- as_tibble(class_counts)
+
+  # Identify which will be kept or dropped
+
+  class_counts$Status <- ifelse(class_counts$ChainClass %in% classes, "Kept", "Dropped")
+
+  # Print summary
+
+  summary_table <- class_counts %>%
+    dplyr::group_by(Status) %>%
+    dplyr::summarise(
+      Classes = dplyr::n(),
+      Cells = sum(Count),
+      .groups = "drop"
+    )
+
+  message("Summary of chain class filtering:")
+  print(summary_table)
+
+  if ("Dropped" %in% class_counts$Status) {
+    message("Dropped chain classes:")
+    print(subset(class_counts, Status == "Dropped"))
+  }
+
+
+  # Now do the actual filtering, only selected classes move downstream
   list.pairs_filt <- list.pairs[names(list.pairs) %in% classes]
 
   # Concatenate each element of the list into a list of lists
   # Transform it into a data frame with 1 cell per row
+
   res <- do.call(c, list.pairs_filt)
   res <- lapply(res, FUN = row1, add_columns)
   res <- bind_rows(res, .id = "classes")
@@ -70,35 +104,31 @@ assigntenx <- function(list.pairs = list.pairs,
     res.sub <- res.sub[,order(colnames(res.sub))]
     res.sub <- res.sub %>% select_if(all_na)
 
+
     #Concatenate all V-genes
-    v_gene <- res.sub %>% ungroup() %>% select(starts_with("v_gene")) %>% tidyr::unite("v_gene", sep = "_") %>% pull(v_gene)
-
+    v_gene <- extract_and_unite(df = res.sub, column_name = "v_gene")
     #All V-genes separated
-    v_genes_unique <- res.sub %>% ungroup() %>% select(starts_with("v_gene"))
-
+    v_genes_unique <- extract_and_unite(df = res.sub, column_name = "v_gene", unite = FALSE)
     #Concatenate all J-genes
-    j_gene <- res.sub %>% ungroup() %>% select(starts_with("j_gene")) %>% tidyr::unite("j_gene", sep = "_") %>% pull(j_gene)
-
-    #Concatenate all C-genes
-    c_gene <- res.sub %>% ungroup() %>% select(starts_with("c_gene")) %>% tidyr::unite("c_gene", sep = "_") %>% pull(c_gene)
-
+    j_gene <- extract_and_unite(df = res.sub, column_name = "j_gene")
     #All J-genes separated
-    j_genes_unique <- res.sub %>% ungroup() %>% select(starts_with("j_gene"))
-
+    j_genes_unique <- extract_and_unite(df = res.sub, column_name = "j_gene", unite = FALSE)
+    #Concatenate all C-genes
+    c_gene <- extract_and_unite(df = res.sub, column_name = "c_gene")
     #Concatenate all CDR3 nt
-    cdr3_col <- res.sub %>% ungroup() %>% select(starts_with("cdr3_nt")) %>% tidyr::unite("cdr3_nt", sep = "_") %>% pull(cdr3_nt)
-
+    cdr3_col <- extract_and_unite(df = res.sub, column_name = "cdr3_nt")
     #All CDR3 nt separated
-    cdr3_col_unique <- res.sub %>% ungroup() %>% select(starts_with("cdr3_nt"))
-
+    cdr3_col_unique <- extract_and_unite(df = res.sub, column_name = "cdr3_nt", unite = FALSE)
     #Concatenate all CDR3 aa
-    cdr3_col2 <- res.sub %>% ungroup() %>% select(matches(cdr3.match)) %>% tidyr::unite("cdr3", sep = "_") %>% pull(cdr3)
-
+    cdr3_col2 <- extract_and_unite(df = res.sub, column_name = cdr3.match)
     #All CDR3 aa separated
-    cdr3_col2_unique <- res.sub %>% ungroup() %>% select(matches(cdr3.match))
+    cdr3_col2_unique <- extract_and_unite(df = res.sub, column_name = cdr3.match, unite = FALSE)
 
     #Concatenate CDR3 nt length
-    cdr3_length <- as.data.frame(apply(res.sub %>% ungroup() %>% select(starts_with("cdr3_nt")), MARGIN = 2, FUN = nchar)) %>% tidyr::unite("cdr3_length", sep = "_") %>% pull(cdr3_length)
+    cdr3_length <- cdr3_col_unique %>%
+      dplyr::mutate(across(everything(), nchar)) %>%
+      tidyr::unite("cdr3_length", sep = "_") %>%
+      dplyr::pull(cdr3_length)
 
     #Selected columns
     if(!is.null(add_columns)){
@@ -142,46 +172,37 @@ assigntenx <- function(list.pairs = list.pairs,
       df.full$selected <- NULL
     }
 
-    df1 <- switch(col_res, "full" = df.full, "reduced" = df.reduced)
+    # Define default clonality parameters
+    default_clonality_args <- list(
+      output = "Clonal.output.10x",
+      vgene_col = "v_genes",
+      jgene_col = "j_genes",
+      cdr3_col = "CDR3",
+      cell = "T",
+      output_original = TRUE,
+      ident_col = "barcodes",
+      mismatch = 0,
+      suffix = i
+    )
 
-    #If 2 or more chains are solutions for the same cell
+    # Merge with user input (if any)
+    clonality_args <- modifyList(default_clonality_args, as.list(clonality_input))
+
+    # Append suffix to output name
+    clonality_args$output <- paste0(clonality_args$output, i)
+
+    # Construct full or reduced metadata frame
+    df1 <- switch(
+      col_res,
+      "full" = df.full,
+      "reduced" = df.reduced
+    )
+
+    # Fix semicolon separation if present
     df1$v_genes <- gsub("\\+", ";", df1$v_genes)
     df1$j_genes <- gsub("\\+", ";", df1$j_genes)
 
-    #Input default parameters for clonality
-    if(length(clonality_input) == 0){
-      clonality_input <- c(output = "Clonal.output.10x", vgene_col = "v_genes", jgene_col = "j_genes", cdr3_col = "CDR3",
-                           cell = "T", output_original = T,  ident_col = "barcodes", mismatch = 0, search_genename = F)
-    } else{
-
-      input <- c(output = "Clonal.output.10x", vgene_col = "v_genes", jgene_col = "j_genes", cdr3_col = "CDR3",
-                 cell = "T", output_original = T,  ident_col = "barcodes", mismatch = 0, search_genename = F)
-
-      input[names(clonality_input)] <- clonality_input
-
-      clonality_input <- input
-    }
-
-    clonality(data = df1,
-              output = paste0(clonality_input["output"], i),
-              vgene_col = clonality_input["vgene_col"],
-              jgene_col = clonality_input["jgene_col"],
-              cdr3_col = clonality_input["cdr3_col"],
-              cell = clonality_input["cell"],
-              output_original = as.logical(clonality_input["output_original"]),
-              suffix = i,
-              ident_col = clonality_input["ident_col"],
-              mismatch = as.numeric(clonality_input["mismatch"]),
-              search_genename = as.logical(clonality_input["search_genename"]))
+    # Call clonality() using do.call for cleaner parameter passing
+    do.call(clonality, c(list(data = df1), clonality_args))
   }
-
-
-  # if(save.files == T){
-  #   files <- ls(pattern = "^Clonal", envir = .GlobalEnv)
-  #   for(i in files){
-  #     write.xlsx(x = get(i), file = sprintf("%s.xlsx", i), rowNames = F)
-  #   }
-  #
-  # }
-
 }
