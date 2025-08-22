@@ -1,4 +1,4 @@
-#clonality
+# clonality
 
 clonality is an R package for automated clonotype assignment of B or T cell receptor sequences.
 It helps identify clonal relationships based on V gene, J gene, and CDR3 similarity, including optional fuzzy subclustering.
@@ -31,8 +31,8 @@ plate_metadata <- extract_plate_metadata(df = analysed_contigs$real_contigs_inpu
 plate_quality <- evaluate_plate_quality(analysed_contigs)
 
 plot_plate_contig_depth(plate_metadata, plate_id = "P09")
-![Contig Depth Plot](man/figures/contig_depth_plot1.png)
 ```
+![Contig Depth Plot](man/figures/contig_depth_plot1.png)
 
 TCR Example Pipeline (with IMGT dataset)
 
@@ -46,8 +46,8 @@ plate_metadata <- extract_plate_metadata(df = analysed_contigs$real_contigs_inpu
 plate_quality <- evaluate_plate_quality(analysed_contigs)
 
 plot_plate_contig_depth(plate_metadata, plate_id = "P01")
+```
 
 ![Contig Depth Plot](man/figures/contig_depth_plot2.png)
-```
 
 
