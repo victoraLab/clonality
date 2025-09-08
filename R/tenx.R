@@ -12,9 +12,7 @@
 #' @param cell Character. Cell type to process. One of: `"B"` (B cells), `"T"` (T cells), `"Tgd"` (γδ T cells). Default is `"T"`.
 #' @param col_res Character. Either `"full"` to retain all chain columns, or `"reduced"` to include only paired chains. Default is `"full"`.
 #' @param add_columns Character vector. Additional metadata columns to include in the output. Optional.
-#' @param cellranger_version Integer. Expected Cell Ranger version (used for validation): `3` (18 columns) or `7` (31 columns) or `9` (32 columns). Default is `7`.
-
-#'
+#' @inheritParams cellranger_version_parser
 #' @return Annotated clonality matrix with clonal group information, invisibly returned after internal call to `assigntenx()`.
 #'
 #' @examples
@@ -34,7 +32,8 @@ tenx <- function(data = NULL,
                  cell = "B",
                  col_res = c("full"),
                  add_columns = NULL,
-                 cellranger_version = 7) {
+                 cellranger_version = 7,
+                 ignore_version = FALSE) {
 
   # Validate method
   if (!method %in% c("unique_paired", "sticky_ends", "unique_all")) {
@@ -48,7 +47,7 @@ tenx <- function(data = NULL,
   }
 
   # Validate and load data using the parser
-  data <- cellranger_version_parser(data, cellranger_version = cellranger_version)
+  data <- cellranger_version_parser(data, cellranger_version = cellranger_version, ignore_version = ignore_version)
 
   # Remove empty or NA CDR3s
   data <- data[data$cdr3_nt != "" & !is.na(data$cdr3_nt), ]

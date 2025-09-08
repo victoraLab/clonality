@@ -20,7 +20,9 @@ Imports:
     stringr,
     dplyr,
     safejoin (>= 0.1.0),
-    gtools
+    gtools,
+    future,
+    furrr
 Depends: 
     R (>= 3.5)
 Remotes:

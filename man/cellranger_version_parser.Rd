@@ -4,22 +4,25 @@
 \alias{cellranger_version_parser}
 \title{Parse and Validate Cell Ranger Data}
 \usage{
-cellranger_version_parser(data, cellranger_version = 7)
+cellranger_version_parser(data, cellranger_version = 7, ignore_version = FALSE)
 }
 \arguments{
 \item{data}{Either a data frame, the name of a data object, or a file path to a \code{.csv} file.}
 
-\item{cellranger_version}{Integer. Must be either 3 or 7. Used to validate the expected number of columns. Default is 7.}
+\item{cellranger_version}{Integer. Supported: 3, 7, or 9. Used to validate the expected number of columns. Default is 7.}
+
+\item{ignore_version}{Logical. If \code{TRUE}, skip version-based column-count validation. Default is \code{FALSE}.}
 }
 \value{
-A validated data frame with structure compatible with the specified Cell Ranger version.
+A (optionally validated) data frame with structure compatible with the specified Cell Ranger version.
 }
 \description{
 Accepts a data frame, a variable name as a character string, or a file path to a \code{.csv} file.
-Returns a parsed data frame and validates the number of columns according to Cell Ranger version.
+Returns a parsed data frame and (optionally) validates the number of columns according to Cell Ranger version.
 }
 \examples{
 parsed <- cellranger_version_parser(Cellranger3_TCR, cellranger_version = 3)
 parsed <- cellranger_version_parser("Cellranger3_TCR", cellranger_version = 3)
+parsed <- cellranger_version_parser("path/to/file.csv", ignore_version = TRUE)
 
 }

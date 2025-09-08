@@ -27,8 +27,8 @@ assigntenx <- function(list.pairs = list.pairs,
                               sticky_ends = chain_classes$sticky_ends)
 
     classes         <- switch(cell, "B"   = classes.list$BigCell.classes,
-                                    "T"   = classes.list$TabCell.classes,
-                                    "Tgd" = classes.list$TgdCell.classes)
+                              "T"   = classes.list$TabCell.classes,
+                              "Tgd" = classes.list$TgdCell.classes)
   }
 
   cdr3.match <- switch(cell, "B" = "cdr3_IG", "T" = "cdr3_TR", "Tgd" = "cdr3_TR")
@@ -131,34 +131,65 @@ assigntenx <- function(list.pairs = list.pairs,
       dplyr::pull(cdr3_length)
 
     #Selected columns
-    if(!is.null(add_columns)){
-      selected_mat <- matrix(nrow = nrow(res.sub), ncol = length(add_columns))
+    if (!is.null(add_columns)) {
+      # preallocate a character matrix filled with NA
+      selected_mat <- matrix(NA_character_, nrow = nrow(res.sub), ncol = length(add_columns))
       colnames(selected_mat) <- add_columns
-      selected_mat <- as.data.frame(selected_mat)
-      for(f in add_columns){
-        selected <- as.data.frame(res.sub %>% ungroup() %>% select(starts_with(f))) %>% tidyr::unite(col = "col", sep = ";") %>% pull(col)
-        selected_mat[,f] <- selected
+
+      # for each requested prefix, collapse any matching cols rowwise with ';'
+      for (f in add_columns) {
+        matched_cols <- grep(paste0("^", f), colnames(res.sub), value = TRUE)
+
+        if (length(matched_cols) == 0) {
+          # no columns start with this prefix -> keep NA
+          selected <- rep(NA_character_, nrow(res.sub))
+        } else {
+          sel_df <- res.sub[, matched_cols, drop = FALSE]
+          # ensure character; tolerate mixed types
+          sel_df[] <- lapply(sel_df, as.character)
+
+          # collapse per row, dropping NA/empty; if all missing -> NA
+          selected <- apply(sel_df, 1, function(row) {
+            row <- row[!is.na(row) & nzchar(row)]
+            if (length(row) == 0) NA_character_ else paste(row, collapse = ";")
+          })
+        }
+
+        selected_mat[, f] <- selected
       }
 
-    }else{
-      selected_mat <- NA
+      # turn into data.frame for cbind
+      selected_mat <- as.data.frame(selected_mat, stringsAsFactors = FALSE)
+
+      # drop fully-NA added columns (e.g., d_gene for light chains)
+      keep <- vapply(selected_mat, function(col) !all(is.na(col)), logical(1))
+      if (any(!keep)) selected_mat <- selected_mat[keep]
+    } else {
+      selected_mat <- NULL
     }
 
 
     #Create final metadata table
-    df.full <- data.frame(barcodes = barcodes,
-                          v_genes = v_gene,
-                          v_genes_unique,
-                          j_genes = j_gene,
-                          c_genes = c_gene,
-                          j_genes_unique,
-                          CDR3 = cdr3_col,
-                          cdr3_col_unique,
-                          cdr3_col2 = cdr3_col2,
-                          cdr3_col2_unique,
-                          cdr3_length = cdr3_length,
-                          raw_clonotypes = raw_clonotypes,
-                          selected = selected_mat)
+    df.full <- data.frame(
+      barcodes = barcodes,
+      v_genes = v_gene,
+      v_genes_unique,
+      j_genes = j_gene,
+      c_genes = c_gene,
+      j_genes_unique,
+      CDR3 = cdr3_col,
+      cdr3_col_unique,
+      cdr3_col2 = cdr3_col2,
+      cdr3_col2_unique,
+      cdr3_length = cdr3_length,
+      raw_clonotypes = raw_clonotypes,
+      check.names = FALSE
+    )
+
+    # add any requested extra columns (already NA-pruned)
+    if (!is.null(selected_mat) && ncol(selected_mat) > 0) {
+      df.full <- cbind(df.full, selected_mat, stringsAsFactors = FALSE)
+    }
 
     df.reduced <- data.frame(barcodes = barcodes,
                              v_genes = v_gene,
@@ -168,9 +199,7 @@ assigntenx <- function(list.pairs = list.pairs,
                              cdr3_length = cdr3_length,
                              raw_clonotypes = raw_clonotypes)
 
-    if(all(is.na(df.full$selected))){
-      df.full$selected <- NULL
-    }
+
 
     # Define default clonality parameters
     default_clonality_args <- list(

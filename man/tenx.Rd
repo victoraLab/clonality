@@ -13,7 +13,8 @@ tenx(
   cell = "B",
   col_res = c("full"),
   add_columns = NULL,
-  cellranger_version = 7
+  cellranger_version = 7,
+  ignore_version = FALSE
 )
 }
 \arguments{
@@ -33,7 +34,9 @@ tenx(
 
 \item{add_columns}{Character vector. Additional metadata columns to include in the output. Optional.}
 
-\item{cellranger_version}{Integer. Expected Cell Ranger version (used for validation): \code{3} (18 columns) or \code{7} (31 columns) or \code{9} (32 columns). Default is \code{7}.}
+\item{cellranger_version}{Integer. Supported: 3, 7, or 9. Used to validate the expected number of columns. Default is 7.}
+
+\item{ignore_version}{Logical. If \code{TRUE}, skip version-based column-count validation. Default is \code{FALSE}.}
 }
 \value{
 Annotated clonality matrix with clonal group information, invisibly returned after internal call to \code{assigntenx()}.
