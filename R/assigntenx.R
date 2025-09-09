@@ -201,12 +201,12 @@ assigntenx <- function(list.pairs = list.pairs,
 
 
 
-    # Define default clonality parameters
+    # --- existing default args
     default_clonality_args <- list(
       output = "Clonal.output.10x",
       vgene_col = "v_genes",
       jgene_col = "j_genes",
-      cdr3_col = "CDR3",
+      cdr3_col  = "CDR3",          # unchanged default: nt only
       cell = "T",
       output_original = TRUE,
       ident_col = "barcodes",
@@ -214,7 +214,7 @@ assigntenx <- function(list.pairs = list.pairs,
       suffix = i
     )
 
-    # Merge with user input (if any)
+    # user override
     clonality_args <- modifyList(default_clonality_args, as.list(clonality_input))
 
     # Append suffix to output name

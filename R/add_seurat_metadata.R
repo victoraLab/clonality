@@ -18,44 +18,41 @@
 #'
 add_seurat_metadata <- function(seu = NULL,
                                 clonal.list = ls(pattern = "^Clonal", envir = .GlobalEnv),
-                                cdr3_map = "cdr3_col2",
+                                cdr3_map = "cdr3_col2",     # now accepts c("cdr3_col2","CDR3")
                                 cell = "T",
                                 purity = 0.8,
                                 stick_only = "all",
                                 sticky = FALSE,
-                                overwrite = T){
+                                overwrite = TRUE){
 
-  #Seu parameter is mandatory
-  if(is.null(seu)){stop("Please add Seurat object to merge clonality.")}
+  if (is.null(seu)) stop("Please add Seurat object to merge clonality.")
 
-  #Function to select cells to map
-  get_mapped.singles <- function(x){
-    if(length(x) == 0){return(FALSE)}
-    if(nrow(x) == 0){
-      return(FALSE)
-    } else {
-      if(nrow(x) > 0){
-        if(length(table(x[["clonality"]])) > 1){
-          if(max(table(x[["clonality"]]))/nrow(x) > purity){
-            return(TRUE)
-          } else {
-            return(FALSE)
-          }
-        }
-      }
+  # ensure vector
+  cdr3_map <- as.character(cdr3_map)
 
-      if(length(table(x[["clonality"]])) == 1){
-        return(TRUE)
-      }
+  # ... (unchanged preamble) ...
 
+  # mapping helper now takes a map column name
+  map_singlets <- function(x, map_col) {
+    mapped <- c2[grepl(x[[map_col]], c2[[map_col]], fixed = TRUE), ]
+    if (nrow(mapped) == 0) return(mapped)
+    # ensure V/J/length consistency
+    if (length(table(mapped[["v_genes"]])) == 1 &&
+        length(table(mapped[["j_genes"]])) == 1 &&
+        length(table(mapped[["cdr3_length"]])) == 1) {
+      return(mapped)
     }
-
+    mapped[0, ] # empty
   }
 
-  #This function gives the top matched paired clone
-  get_fixed_clonality <- function(x){
-    return(names(which.max(table(x[["clonality"]]))))
+  get_mapped.singles <- function(x, purity) {
+    if (nrow(x) == 0) return(FALSE)
+    tb <- table(x[["clonality"]])
+    if (length(tb) == 1) return(TRUE)
+    max(tb) / sum(tb) > purity
   }
+
+  get_fixed_clonality <- function(x) names(which.max(table(x[["clonality"]])))
 
   #This function maps each singlet to a paired
   map_singlets <- function(x) {
@@ -96,47 +93,58 @@ add_seurat_metadata <- function(seu = NULL,
   c2 <- do.call(bind_rows, mget(pairs,   envir = .GlobalEnv))
   c3 <- do.call(bind_rows, mget(rest,    envir = .GlobalEnv))
 
-  if(sticky == T){
+  if (sticky) {
+    # try maps in priority order
+    tried <- list()
+    success <- FALSE
+    for (mc in cdr3_map) {
+      c1.mapped <- apply(c1, MARGIN = 1, map_singlets, map_col = mc)
+      names(c1.mapped) <- c1$barcodes
 
-  #Which single chain, matches the paired cdr3 sequences
-  c1.mapped <- apply(c1, MARGIN = 1 , map_singlets)
-  names(c1.mapped) <- c1$barcodes
+      ok <- vapply(c1.mapped, get_mapped.singles, logical(1), purity = purity)
+      c1.correct <- c1.mapped[ok]
 
-  #Filter out non mapping clones
-  c1.filter <- lapply(c1.mapped, FUN = get_mapped.singles)
-  c1.correct <- c1.mapped[unlist(c1.filter)]
+      if (length(c1.correct) > 0) {
+        # success with this map
+        df <- data.frame(names = names(c1.correct))
+        df$clonality.corrected <- unlist(lapply(c1.correct, get_fixed_clonality))
 
-  #Get the top matching clone
-  df <- data.frame(names = names(c1.correct))
-  df$clonality.corrected <- NA
-  df$clonality.corrected <- unlist(lapply(c1.correct, FUN = get_fixed_clonality))
+        c1 <- dplyr::left_join(c1, df, by = c("barcodes" = "names"))
+        c1$clonality.correction <- c("Corrected", "Normal")[
+          as.numeric(coalesce(c1$clonality.corrected, c1$clonality) == c1$clonality) + 1
+        ]
+        c1$clonality <- coalesce(c1$clonality.corrected, c1$clonality)
+        c1$clonality.corrected <- NULL
+        c1$mapping_source <- mc
+        success <- TRUE
+        break
+      } else {
+        tried[[mc]] <- TRUE
+      }
+    }
+    if (!success) {
+      c1$mapping_source <- NA_character_
+    }
+  }
 
-  #Replace old IDs
-  c1 <- left_join(c1, df, by = c("barcodes" = "names"))
-  c1$clonality.correction <- c("Corrected", "Normal")[as.numeric(coalesce(c1$clonality.corrected, c1$clonality) == c1$clonality) + 1]
-
-  c1$clonality <- coalesce(c1$clonality.corrected, c1$clonality)
-  c1$clonality.corrected <- NULL
-
-}
-
-  #Merge all clonotype tables
-  c0 <- bind_rows(c1,c2,c3)
+  # merge all clonotype tables
+  c0 <- dplyr::bind_rows(c1, c2, c3)
   c0 <- as.data.frame(c0)
   colnames(c0) <- paste0("Res_", colnames(c0))
-  c0 <- as.data.frame(c0)
   rownames(c0) <- c0[["Res_barcodes"]]
 
-  if(sticky == T){
-  c0$Res_clonality.correction[is.na(c0$Res_clonality.correction)] <- "Not tested"
+  if (sticky) {
+    c0$Res_clonality.correction[is.na(c0$Res_clonality.correction)] <- "Not tested"
+    # carry mapping source if present
+    if (!"Res_mapping_source" %in% colnames(c0) && "Res_mapping_source" %in% names(c0)) {
+      # no-op; naming already handled by prefix above
+    }
   }
 
-  if(overwrite == T){
-    seu@meta.data <- seu@meta.data %>% select(-contains("Res_"))
+  if (overwrite) {
+    seu@meta.data <- seu@meta.data %>% dplyr::select(-dplyr::contains("Res_"))
   }
 
-  seu <- AddMetaData(seu, metadata = c0)
-
+  seu <- Seurat::AddMetaData(seu, metadata = c0)
   return(seu)
-
 }

@@ -45,7 +45,7 @@ clonality <- function(data = "example.xlsx",
                       ident_col = "Sequence_ID",
                       vgene_col = "VGENE_and_allele",
                       jgene_col = "JGENE_and_allele",
-                      cdr3_col = "JUNCTION",
+                      cdr3_col = "JUNCTION",                 # now accepts length 1 or 2
                       cell = "T",
                       output_original = FALSE,
                       mismatch = 0,
@@ -53,80 +53,144 @@ clonality <- function(data = "example.xlsx",
                       filter_IMGT_sequences = FALSE,
                       stringdist_method = "osa",
                       project = "project",
+                      cdr3_tags = NULL,                      # optional override for column tags, e.g. c("nt","aa")
                       ...) {
 
-  if (!is.numeric(mismatch) || mismatch < 0 || mismatch > 100) {
+  # --- helpers ---------------------------------------------------------------
+  recycle2 <- function(x, n) {
+    if (length(x) == 0) return(rep(NA, n))
+    if (length(x) == n) return(x)
+    if (length(x) == 1) return(rep(x, n))
+    stop(sprintf("Length mismatch: expected length 1 or %d, got %d.", n, length(x)))
+  }
+
+  detect_tag <- function(vec_chr) {
+    # crude but robust: >80% chars in A/C/G/T/N -> nt, else aa
+    s <- paste(vec_chr, collapse = "")
+    s <- gsub("[^A-Za-z]", "", s)
+    if (nchar(s) == 0) return("nt")
+    nt_frac <- nchar(gsub("[^ACGTNacgtn]", "", s)) / nchar(s)
+    if (is.na(nt_frac)) return("nt")
+    if (nt_frac >= 0.8) "nt" else "aa"
+  }
+
+  # --------------------------------------------------------------------------
+  if (!is.numeric(mismatch) || any(mismatch < 0 | mismatch > 100)) {
     stop("'mismatch' must be between 0 and 100 (percent similarity threshold).")
   }
 
-  hclust_height <- mismatch / 100
-
-  # Read the input data (data frame or .xlsx file)
-  # If data is not a file path, assume it's a data frame from the R environment
+  # Read input
   imported_df <- read_repertoire(data, ...)
-
   missing_cols <- setdiff(c(ident_col, vgene_col, jgene_col, cdr3_col), names(imported_df))
   if (length(missing_cols) > 0) {
     stop(sprintf("Missing required column(s): %s", paste(missing_cols, collapse = ", ")), call. = FALSE)
   }
 
-  # Remove rows with missing CDR3 sequences regardless of filter_sequences option
+  # Always drop empty CDR3 rows (across any requested CDR3 col)
   rm.cols <- c(NA, "")
-  df <- imported_df[!imported_df[[cdr3_col]] %in% rm.cols, ]
+  keep_idx <- Reduce(`&`, lapply(cdr3_col, function(cc) !(imported_df[[cc]] %in% rm.cols)))
+  df <- imported_df[keep_idx, , drop = FALSE]
 
-  if(filter_IMGT_sequences == TRUE){
-    df <- filter_sequences_imgt(df = df, cdr3_col = cdr3_col)
+  if (isTRUE(filter_IMGT_sequences)) {
+    # you may keep your existing filter; it will run on the primary column
+    df <- filter_sequences_imgt(df = df, cdr3_col = cdr3_col[[1]])
   }
 
-  # Create a simplified data frame with relevant columns
-  sub.df <- data.frame(cell_id = df[[ident_col]],
-                          v_genes = df[[vgene_col]],
-                          j_genes = df[[jgene_col]],
-                          CDR3 = df[[cdr3_col]],
-                          CDR3L = nchar(df[[cdr3_col]]),
-                          stringsAsFactors = FALSE)
+  # reduced frame
+  sub.df <- data.frame(
+    cell_id = df[[ident_col]],
+    v_genes = df[[vgene_col]],
+    j_genes = df[[jgene_col]],
+    stringsAsFactors = FALSE
+  )
 
-  # Check for missing V or J genes and stop execution if any are found
-  if (any(!complete.cases(sub.df))) {
+  # sanity on V/J
+  if (any(!complete.cases(sub.df[, c("v_genes","j_genes")]))) {
     stop("Some rows contain missing V or J genes.")
   }
 
-  # Simplify gene names using IMGT nomenclature if requested
-  simple.df <- simplify_genenames(data = sub.df, cell = cell)
+  # simplify names
+  simple.df <- simplify_genenames(data = cbind(sub.df, df[, cdr3_col, drop = FALSE]), cell = cell)
+  clonal.df  <- simple.df[["clonal.df"]]
 
-  # Filter by V gene, J gene, and CDR3 length to generate a unique ID for each sequence
-  clonal.df <- simple.df[["clonal.df"]]
-  v <- clonal.df[["v_genes"]]
-  j <- clonal.df[["j_genes"]]
-  l <- clonal.df[["CDR3L"]]
-  clonal_id <- paste(v, j, l, sep = "_")
+  # Prepare per-CDR3 configs
+  K <- length(cdr3_col)
+  mismatch          <- recycle2(mismatch, K)
+  stringdist_method <- recycle2(stringdist_method, K)
+  suffix            <- recycle2(suffix %||% NA_character_, K)
 
-  # Group into clones or assign unique IDs
-  if (any(duplicated(clonal_id))) {
-    clonal.df <- cluster_duplicates_by_cdr3(clonal.df = clonal.df, clonal_id = clonal_id, cdr3_lengths = l, dist_method = stringdist_method, h_height = hclust_height)
+  # decide tags
+  if (is.null(cdr3_tags)) {
+    tags <- vapply(cdr3_col, function(cc) detect_tag(clonal.df[[cc]]), character(1))
   } else {
-    clonal.df$clonality <- assign_unique_ids(clonal.df)
+    if (length(cdr3_tags) == 1) tags <- rep(cdr3_tags, K) else tags <- cdr3_tags
+  }
+  tags <- ifelse(tags %in% c("nt","aa"), tags, paste0("cdr3", seq_len(K)))
+
+  # container for outputs
+  out_list <- vector("list", K)
+
+  # run once per CDR3 column
+  for (k in seq_len(K)) {
+    ccol <- cdr3_col[[k]]
+    tag  <- tags[[k]]
+
+    tmp <- clonal.df
+    tmp$CDR3  <- clonal.df[[ccol]]
+    tmp$CDR3L <- nchar(tmp$CDR3)
+
+    # Unique bin by V/J/length
+    clonal_id <- paste(tmp[["v_genes"]], tmp[["j_genes"]], tmp[["CDR3L"]], sep = "_")
+
+    if (any(duplicated(clonal_id))) {
+      tmp <- cluster_duplicates_by_cdr3(
+        clonal.df      = tmp,
+        clonal_id      = clonal_id,
+        cdr3_lengths   = tmp$CDR3L,
+        dist_method    = stringdist_method[[k]],
+        h_height       = mismatch[[k]] / 100
+      )
+    } else {
+      tmp$clonality <- assign_unique_ids(tmp)
+    }
+
+    # project, suffixing per CDR3 if requested
+    tmp$project <- project
+    if (!is.na(suffix[[k]])) {
+      tmp$clonality <- paste(suffix[[k]], tmp$clonality, sep = "_")
+    }
+
+    # keep only id + clonality
+    out_list[[k]] <- tmp[, c("cell_id","clonality"), drop = FALSE]
+    names(out_list[[k]])[2] <- paste0("clonality_", tag)
   }
 
-  # Add project name if specified
-  clonal.df$project <- project
+  # merge per-CDR3 results together
+  clonal.merge <- Reduce(function(x, y) dplyr::left_join(x, y, by = "cell_id"), out_list)
 
-  # Merge with original data or save a minimal version depending on user preference
-  if (output_original) {
-    clonal.df <- safe_full_join(x = imported_df, y = clonal.df, by = setNames("cell_id", ident_col), conflict = coalesce)
+  # add back basics (V/J + the provided CDR3 columns) for context
+  base_cols <- c("cell_id","v_genes","j_genes", cdr3_col)
+  clonal.merge <- dplyr::left_join(
+    clonal.merge,
+    clonal.df[, unique(base_cols), drop = FALSE],
+    by = "cell_id"
+  )
+
+  # merge with original or order
+  if (isTRUE(output_original)) {
+    clonal.merge <- safe_full_join(
+      x = imported_df, y = clonal.merge,
+      by = setNames("cell_id", ident_col), conflict = coalesce
+    )
   } else {
-    clonal.df <- clonal.df[mixedorder(clonal.df$clonality), ]
+    primary <- names(clonal.merge)[grepl("^clonality_", names(clonal.merge))][1]
+    clonal.merge <- clonal.merge[gtools::mixedorder(clonal.merge[[primary]]), ]
   }
 
-  # Append the suffix to clonality IDs if provided
-  if (!is.null(suffix)) {
-    clonal.df$clonality <- paste(suffix, clonal.df$clonality, sep = "_")
-  }
-
-  # Save the output to the R environment or to an .xlsx file
+  # write or assign
   if (is.character(data)) {
-    openxlsx::write.xlsx(clonal.df, sprintf("%s.xlsx", output), row.names = FALSE)
+    openxlsx::write.xlsx(clonal.merge, sprintf("%s.xlsx", output), row.names = FALSE)
   } else {
-    assign(output, clonal.df, envir = .GlobalEnv)
+    assign(output, clonal.merge, envir = .GlobalEnv)
   }
 }
