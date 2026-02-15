@@ -12,7 +12,7 @@ add_seurat_metadata(
   purity = 0.8,
   stick_only = "all",
   sticky = FALSE,
-  overwrite = T
+  overwrite = TRUE
 )
 }
 \arguments{

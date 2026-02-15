@@ -4,29 +4,22 @@
 \alias{simplify_genenames}
 \title{Simplify Gene Names Based on Cell Type and Create a Summary Report}
 \usage{
-simplify_genenames(data, cell)
+simplify_genenames(data, cell, drop_all_na_genes = FALSE)
 }
 \arguments{
-\item{data}{A data frame containing immune repertoire data with V and J gene columns.}
+\item{data}{A data frame containing immune repertoire data with V/J (and optionally D) gene columns.}
 
-\item{cell}{\code{Character}. The cell type: "T" for T cells or "B" for B cells. The function adjusts the gene name extraction pattern accordingly.}
+\item{cell}{\code{Character}. "T" for T cells or "B" for B cells.}
 }
 \value{
 A list with:
 \itemize{
-\item \code{clonal.df}: A data frame with simplified gene names and added metadata columns.
-\item \code{report}: A summary data frame with counts of functional types and multiple annotations.
+\item \code{clonal.df}: data frame with simplified gene names and added metadata columns.
+\item \code{report}: summary data frame with counts of functional types and multiple annotations.
 }
 }
 \description{
-This helper function simplifies V and J gene names in the input data frame according to the specified cell type (T cell or B cell).
-It also generates a report summarizing the number of functional ("F"), open reading frame ("ORF"), and pseudo ("P") genes,
-as well as sequences with multiple annotations.
-}
-\examples{
-data <- data.frame(v_genes = c("TRAV12-2*01 F", "TRBV7-9*01 F"),
-                   j_genes = c("TRAJ33*01 F", "TRBJ2-1*01 F"))
-result <- simplify_genenames(data, cell = "T")
-simplified <- result$clonal.df
-report <- result$report
+Simplifies V, D, and J gene names (when present) in the input data frame according to the specified
+cell type (T cell or B cell). Generates a report summarizing functionality ("F", "ORF", "P")
+and multiple-annotation flags.
 }

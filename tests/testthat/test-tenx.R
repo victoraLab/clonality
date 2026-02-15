@@ -18,25 +18,22 @@ test_that("tenx drops empty/NA CDR3s before grouping", {
   df <- data.frame(
     barcode = c("A", "A", "B"),
     chain   = c("IGH", "IGK", "IGH"),
-    cdr3_nt = c("", NA, "ATG"),          # first two should be removed
+    cdr3_nt = c("", NA, "ATG"),
     productive = c("True", "True", "True"),
     is_cell    = c("True", "True", "True"),
     stringsAsFactors = FALSE
   )
 
-  with_mocked_bindings(
-    cellranger_version_parser = function(data, cellranger_version) data,  # <- named
-    assigntenx = function(list.pairs, ...) list.pairs,                     # <- named
+  testthat::local_mocked_bindings(
+    assigntenx = function(list.pairs, ...) list.pairs,
     .env = environment(tenx)
-    , {
-      res <- tenx(df)
+  )
 
-      # Only barcode B remains (A's contigs dropped for empty/NA CDR3)
-      expect_named(res, "IGH")               # one chain class
-      expect_equal(length(res[["IGH"]]), 1L) # one cell (barcode B)
-    })
+  res <- tenx(df, ignore_version = TRUE)
+
+  expect_named(res, "IGH")
+  expect_equal(length(res[["IGH"]]), 1L)
 })
-
 
 test_that("only_productive=TRUE filters out non-productive contigs", {
   df <- data.frame(
@@ -49,11 +46,10 @@ test_that("only_productive=TRUE filters out non-productive contigs", {
   )
 
   with_mocked_bindings(
-    cellranger_version_parser = function(data, cellranger_version) data,  # <- named
     assigntenx = function(list.pairs, ...) list.pairs,                     # <- named
     .env = environment(tenx)
     , {
-    res <- tenx(df, only_productive = TRUE)
+    res <- tenx(df, only_productive = TRUE, ignore_version = TRUE)
     # All remaining contigs are IGH; classes should be just "IGH" (no IGK)
     expect_named(res, "IGH")
     # two barcodes (A,B) each with a single IGH entry
@@ -72,11 +68,10 @@ test_that("only_true_cells=TRUE filters by is_cell", {
   )
 
   with_mocked_bindings(
-    cellranger_version_parser = function(data, cellranger_version) data,  # <- named
     assigntenx = function(list.pairs, ...) list.pairs,                     # <- named
     .env = environment(tenx)
     , {
-    res <- tenx(df, only_true_cells = TRUE)
+    res <- tenx(df, only_true_cells = TRUE, ignore_version = TRUE)
     # Only barcode A remains; its chain class is IGH_IGK (ordered)
     expect_true("IGH_IGK" %in% names(res))
     expect_equal(length(res[["IGH_IGK"]]), 1L)
@@ -95,11 +90,10 @@ test_that("Tgd special handling removes chain=='None' and CDR3 with '*'", {
   )
 
   with_mocked_bindings(
-    cellranger_version_parser = function(data, cellranger_version) data,  # <- named
     assigntenx = function(list.pairs, ...) list.pairs,                     # <- named
     .env = environment(tenx)
     , {
-    res <- tenx(df, cell = "Tgd")
+    res <- tenx(df, cell = "Tgd", ignore_version = TRUE)
     # Drops barcode A's 'None' contig, and drops barcode B's TRD with '*'
     # Remaining classes:
     #   A: TRG

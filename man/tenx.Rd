@@ -6,6 +6,7 @@
 \usage{
 tenx(
   data = NULL,
+  experiment = "experiment1",
   method = "unique_paired",
   only_productive = TRUE,
   only_true_cells = TRUE,
@@ -13,12 +14,14 @@ tenx(
   cell = "B",
   col_res = c("full"),
   add_columns = NULL,
-  cellranger_version = 7,
+  cellranger_version = NULL,
   ignore_version = FALSE
 )
 }
 \arguments{
 \item{data}{Data frame, character string (object name), or full path to a \code{filtered_contig_annotations.csv} or \code{all_contig_annotations.csv} file.}
+
+\item{experiment}{Character. Experiment name ID \code{optional}.}
 
 \item{method}{Character. Clonality inference method. One of: \code{"unique_paired"}, \code{"sticky_ends"}, \code{"unique_all"}. Default is \code{"unique_paired"}.}
 
@@ -48,7 +51,7 @@ Loads and processes 10x Genomics V(D)J output (either as a data frame, file path
 Supports BCR, TCR, and γδ TCR data from Cell Ranger versions 3 (18 columns) and 7 (31 columns).
 }
 \examples{
-tenx(data = Cellranger3_TCR, method = "unique_paired", cell = "T", clonality_input = c(mismatch = 20), cellranger_version = 3, )
-tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B", only_productive = TRUE)
+Cellranger3_TCR <- tenx(data = Cellranger3_TCR, method = "unique_paired", cell = "T", clonality_input = c(mismatch = 20), cellranger_version = 3)
+Cellranger7_BCR1 <- tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B", only_productive = TRUE, cellranger_version = 7)
 
 }

@@ -2,29 +2,38 @@
 % Please edit documentation in R/cluster_functions.R
 \name{cluster_duplicates_by_cdr3}
 \alias{cluster_duplicates_by_cdr3}
-\title{Cluster Clonal IDs Based on CDR3 Similarity}
+\title{Cluster duplicated clonal IDs by CDR3 similarity}
 \usage{
 cluster_duplicates_by_cdr3(
   clonal.df,
   clonal_id,
   cdr3_lengths,
-  dist_method,
-  h_height
+  dist_method = "osa",
+  h_height = 0
 )
 }
 \arguments{
-\item{clonal.df}{A simplified data frame with at least CDR3, \code{cell_id}, and gene columns.}
+\item{clonal.df}{A simplified data frame containing at least a \code{CDR3} column.}
 
-\item{clonal_id}{A character vector of V-J-CDR3L combinations.}
+\item{clonal_id}{A character vector of V–J–CDR3 length identifiers.}
 
 \item{cdr3_lengths}{A numeric vector of CDR3 lengths, same length as \code{clonal_id}.}
 
-\item{h_height}{The height threshold (between 0 and 1) for clustering.}
+\item{dist_method}{String distance method passed to \code{stringdist::stringdistmatrix()}.}
+
+\item{h_height}{Clustering height threshold (0–1); typically \code{mismatch / 100}.}
 }
 \value{
-A data frame with a \code{clonality} column assigning clone IDs.
+A data frame with an added \code{clonality} column.
 }
 \description{
-Clusters sequences with identical V-J-CDR3L identifiers into subclones based on CDR3 sequence similarity.
-Uses hierarchical clustering with a specified height threshold. Clone groups are sorted by decreasing size.
+Clusters sequences sharing the same V–J–CDR3 length identifier into subclones
+based on CDR3 sequence similarity. Clone bins are generated based on same V
+J and CDR3 length.
+When \code{h_height = 0}, subclones are defined by exact CDR3 identity.
+}
+\details{
+Clone bins are processed in decreasing order of size and assigned hierarchical
+labels of the form \verb{<bin>.<subcluster>}. Rows not belonging to duplicated bins
+receive unique \verb{U*} identifiers.
 }

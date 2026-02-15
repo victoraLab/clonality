@@ -58,6 +58,3 @@ test_that("simplify_genenames throws for invalid cell type", {
 
   })
 
-
-
-

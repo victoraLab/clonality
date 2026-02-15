@@ -6,7 +6,6 @@
 \usage{
 clonality(
   data = "example.xlsx",
-  output = "output",
   ident_col = "Sequence_ID",
   vgene_col = "VGENE_and_allele",
   jgene_col = "JGENE_and_allele",
@@ -15,6 +14,8 @@ clonality(
   output_original = FALSE,
   mismatch = 0,
   suffix = NULL,
+  file = NULL,
+  quiet = FALSE,
   filter_IMGT_sequences = FALSE,
   stringdist_method = "osa",
   project = "project",
@@ -23,8 +24,6 @@ clonality(
 }
 \arguments{
 \item{data}{A data frame or a file path to a \code{.xlsx} file containing repertoire data.}
-
-\item{output}{\code{Character}. The name of the output variable or file. Default: "output".}
 
 \item{ident_col}{\code{Character}. The name of the column containing unique identifiers. Default: "Sequence_ID".}
 
@@ -48,6 +47,10 @@ Internally used to calculate clustering height: \code{hclust_height = mismatch /
 
 \item{suffix}{\code{Character}. A string to append to the clonality group IDs.}
 
+\item{file}{\code{Character}. Saves output as an excel file.}
+
+\item{quiet}{\code{Logical}. Whether to print silently the result.}
+
 \item{filter_IMGT_sequences}{\code{Logical}. Whether to filter for productive IMGT CDR3 sequences. Default: \code{FALSE}.}
 
 \item{stringdist_method}{String distance method passed to \code{stringdist()}.
@@ -68,8 +71,8 @@ Sequences with identical V-J-CDR3 length combinations are clustered using hierar
 Can return a full joined data frame or a simplified annotated output.
 }
 \examples{
-clonality(data = tra, vgene_col = "V_GENE_and_allele", jgene_col = "J_GENE_and_allele")
-clonality(data = trb, output = "clones", vgene_col = "V_GENE_and_allele", jgene_col = "J_GENE_and_allele")
-clonality(data = IMGT_TCR_Summary_File, cdr3_col  = "DNA_Junction")
+results <- clonality(data = tra, vgene_col = "V_GENE_and_allele", jgene_col = "J_GENE_and_allele")
+results <- clonality(data = trb,  vgene_col = "V_GENE_and_allele", jgene_col = "J_GENE_and_allele")
+results <- clonality(data = IMGT_TCR_Summary_File, cdr3_col  = "DNA_Junction")
 
 }

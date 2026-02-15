@@ -39,7 +39,6 @@ cellranger_version_parser <- function(data, cellranger_version = 7, ignore_versi
     }
   }
 
-  # Optionally validate number of columns by version
   if (!isTRUE(ignore_version)) {
     col_count <- ncol(data)
 

@@ -5,6 +5,7 @@
 #' Supports BCR, TCR, and γδ TCR data from Cell Ranger versions 3 (18 columns) and 7 (31 columns).
 #'
 #' @param data Data frame, character string (object name), or full path to a `filtered_contig_annotations.csv` or `all_contig_annotations.csv` file.
+#' @param experiment Character. Experiment name ID `optional`.
 #' @param method Character. Clonality inference method. One of: `"unique_paired"`, `"sticky_ends"`, `"unique_all"`. Default is `"unique_paired"`.
 #' @param only_productive Logical. Whether to filter non-productive chains. Default is `TRUE`.
 #' @param only_true_cells Logical. Whether to filter out low-quality/non-true cells (i.e., `is_cell != TRUE`). Default is `TRUE`.
@@ -16,8 +17,8 @@
 #' @return Annotated clonality matrix with clonal group information, invisibly returned after internal call to `assigntenx()`.
 #'
 #' @examples
-#' tenx(data = Cellranger3_TCR, method = "unique_paired", cell = "T", clonality_input = c(mismatch = 20), cellranger_version = 3, )
-#' tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B", only_productive = TRUE)
+#' Cellranger3_TCR <- tenx(data = Cellranger3_TCR, method = "unique_paired", cell = "T", clonality_input = c(mismatch = 20), cellranger_version = 3)
+#' Cellranger7_BCR1 <- tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B", only_productive = TRUE, cellranger_version = 7)
 #'
 #' @import dplyr
 #' @importFrom stringr str_extract
@@ -25,6 +26,7 @@
 #' @importFrom data.table rbindlist
 #' @export
 tenx <- function(data = NULL,
+                 experiment = "experiment1",
                  method = "unique_paired",
                  only_productive = TRUE,
                  only_true_cells = TRUE,
@@ -32,7 +34,7 @@ tenx <- function(data = NULL,
                  cell = "B",
                  col_res = c("full"),
                  add_columns = NULL,
-                 cellranger_version = 7,
+                 cellranger_version = NULL,
                  ignore_version = FALSE) {
 
   # Validate method
@@ -47,7 +49,9 @@ tenx <- function(data = NULL,
   }
 
   # Validate and load data using the parser
-  data <- cellranger_version_parser(data, cellranger_version = cellranger_version, ignore_version = ignore_version)
+  data <- cellranger_version_parser(data,
+                                    cellranger_version = cellranger_version,
+                                    ignore_version = ignore_version)
 
   # Remove empty or NA CDR3s
   data <- data[data$cdr3_nt != "" & !is.na(data$cdr3_nt), ]
@@ -90,6 +94,7 @@ tenx <- function(data = NULL,
   # Run clonality assignment per chain class
   assigntenx(
     list.pairs = list.pairs,
+    experiment = experiment,
     method = method,
     clonality_input = clonality_input,
     cell = cell,

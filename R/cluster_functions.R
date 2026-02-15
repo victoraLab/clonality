@@ -1,61 +1,96 @@
-#' Cluster Clonal IDs Based on CDR3 Similarity
+#' Cluster duplicated clonal IDs by CDR3 similarity
 #'
-#' Clusters sequences with identical V-J-CDR3L identifiers into subclones based on CDR3 sequence similarity.
-#' Uses hierarchical clustering with a specified height threshold. Clone groups are sorted by decreasing size.
+#' Clusters sequences sharing the same V–J–CDR3 length identifier into subclones
+#' based on CDR3 sequence similarity. Clone bins are generated based on same V
+#' J and CDR3 length.
+#' When `h_height = 0`, subclones are defined by exact CDR3 identity.
 #'
-#' @inheritParams clonality
-#' @param clonal.df A simplified data frame with at least CDR3, `cell_id`, and gene columns.
-#' @param clonal_id A character vector of V-J-CDR3L combinations.
+#' Clone bins are processed in decreasing order of size and assigned hierarchical
+#' labels of the form `<bin>.<subcluster>`. Rows not belonging to duplicated bins
+#' receive unique `U*` identifiers.
+#'
+#' @param clonal.df A simplified data frame containing at least a `CDR3` column.
+#' @param clonal_id A character vector of V–J–CDR3 length identifiers.
 #' @param cdr3_lengths A numeric vector of CDR3 lengths, same length as `clonal_id`.
-#' @param h_height The height threshold (between 0 and 1) for clustering.
+#' @param dist_method String distance method passed to `stringdist::stringdistmatrix()`.
+#' @param h_height Clustering height threshold (0–1); typically `mismatch / 100`.
 #'
-#' @return A data frame with a `clonality` column assigning clone IDs.
+#' @return A data frame with an added `clonality` column.
 #'
 #' @export
-cluster_duplicates_by_cdr3 <- function(clonal.df, clonal_id, cdr3_lengths, dist_method, h_height) {
+cluster_duplicates_by_cdr3 <- function(clonal.df, clonal_id, cdr3_lengths,
+                                          dist_method = "osa", h_height = 0) {
+
+  # Identify bin IDs that occur more than once (i.e., bins needing within-bin subclustering).
   duplicated_ids <- unique(clonal_id[duplicated(clonal_id)])
 
-  clonal.df$clonality <- NA
-  groups <- vector("list", length = length(duplicated_ids))
-  sizes <- numeric(length(groups))
+  # Initialize output column (explicit character to avoid factor surprises).
+  clonal.df$clonality <- NA_character_
 
-  # Step 1: build group info (distance matrices and indices)
-  for (i in seq_along(duplicated_ids)) {
-    id <- duplicated_ids[i]
-    idx <- which(clonal_id == id)
-    dist_mat <- stringdist::stringdistmatrix(clonal.df[idx, "CDR3"], method = dist_method, useNames = FALSE)
-    dist_mat <- dist_mat / cdr3_lengths[idx][1]
-    groups[[i]] <- list(idx = idx, dist = dist_mat)
-    sizes[i] <- length(idx)
-  }
+  # Process the largest bins first (mirrors original behavior and helps debugging/profiling).
+  sizes <- vapply(duplicated_ids, function(id) sum(clonal_id == id), numeric(1))
+  duplicated_ids <- duplicated_ids[order(sizes, decreasing = TRUE)]
 
-  # Step 2: sort groups by descending size
-  ord <- order(sizes, decreasing = TRUE)
-  groups <- groups[ord]
+  clone_counter <- 1L
 
-  # Step 3: assign clonality
-  clone_counter <- 1
-  for (g in groups) {
-    hclust_result <- hclust(g$dist)
-    cutree_result <- cutree(hclust_result, h = h_height)
+  # Iterate over each duplicated bin (each corresponds to a fixed V/J/length combination).
+  for (id in duplicated_ids) {
+    idx  <- which(clonal_id == id)      # row indices belonging to this bin
+    seqs <- clonal.df$CDR3[idx]         # original per-row CDR3 strings for this bin
 
-    for (k in unique(cutree_result)) {
-      group_idx <- g$idx[cutree_result == k]
-      clonal.df$clonality[group_idx] <- sprintf("%s.%s", clone_counter, k)
+    # Collapse to unique CDR3 sequences to avoid N^2 work on repeated identical reads.
+    uniq_seqs <- unique(seqs)
+
+    # FAST PATH: mismatch == 0 (h_height == 0) => exact identity grouping.
+    # Each unique CDR3 within this bin gets a unique subcluster label.
+    if (h_height == 0) {
+      # For each row, map its CDR3 to the index of the corresponding unique CDR3.
+      # Example: if 90 rows share the same CDR3, they all map to the same k.
+      k <- match(seqs, uniq_seqs)  # integers 1..length(uniq_seqs)
+      clonal.df$clonality[idx] <- sprintf("%d.%d", clone_counter, k)
+      clone_counter <- clone_counter + 1L
+      next
     }
 
-    clone_counter <- clone_counter + 1
+    # If the bin contains only one unique CDR3, all rows must belong to the same subcluster.
+    # No distance computation is needed.
+    if (length(uniq_seqs) == 1L) {
+      clonal.df$clonality[idx] <- sprintf("%d.%d", clone_counter, 1L)
+      clone_counter <- clone_counter + 1L
+      next
+    }
+
+    # mismatch > 0 and >1 unique CDR3:
+    # Compute pairwise distances only across unique CDR3 sequences (size = U x U).
+    dist_mat <- stringdist::stringdistmatrix(
+      uniq_seqs, uniq_seqs,
+      method = dist_method,
+      useNames = FALSE
+    )
+
+    # Normalize distances by CDR3 length (constant within this bin).
+    L <- cdr3_lengths[idx][1]
+    dist_obj <- stats::as.dist(dist_mat / L)
+
+    # Hierarchical clustering + cut at the requested height.
+    hc <- stats::hclust(dist_obj)
+    ct <- stats::cutree(hc, h = h_height)  # cluster label for each entry of uniq_seqs
+
+    # Map per-unique cluster labels back to every original row.
+    m <- match(seqs, uniq_seqs)
+    clonal.df$clonality[idx] <- sprintf("%d.%d", clone_counter, ct[m])
+
+    clone_counter <- clone_counter + 1L
   }
 
-  # Step 4: assign unique IDs to leftovers
+  # Rows that never belonged to a duplicated bin get unique IDs (same behavior as original).
   unique_bool <- is.na(clonal.df$clonality)
   if (any(unique_bool)) {
-    clonal.df$clonality[unique_bool] <- sprintf("U%s", seq_len(sum(unique_bool)))
+    clonal.df$clonality[unique_bool] <- paste0("U", seq_len(sum(unique_bool)))
   }
 
-  return(clonal.df)
+  clonal.df
 }
-
 #' Assign Unique Clone Identifiers
 #'
 #' Assigns a unique ID to each row (e.g., `"U1"`, `"U2"`, ...) when no duplicates are found.
