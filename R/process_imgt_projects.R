@@ -30,11 +30,14 @@ process_imgt_projects <- function(project_paths,
     project_name <- basename(project_path)
     imgt_data <- parse_imgt(project_path)
 
-    clonality(data = imgt_data,
-              cdr3_col = "DNA_Junction",
-              cell = cell_type,
-              mismatch = mismatch,
-              project = project_name)
+    output <- clonality(
+      data = imgt_data,
+      cdr3_col = "DNA_Junction",
+      cell = cell_type,
+      mismatch = mismatch,
+      project = project_name,
+      quiet = TRUE
+      )
 
     analysed <- analyze_well_contigs(output, barcode_format = "auto")
     metadata <- extract_plate_metadata(analysed$real_contigs_input, barcode_format = "auto")

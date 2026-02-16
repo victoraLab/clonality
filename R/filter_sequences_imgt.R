@@ -11,7 +11,10 @@
 #' @return A filtered data frame with the bad sequences removed and a message reporting the number of rows removed.
 #'
 #' @examples
-#' filtered_df <- filter_sequences_imgt(df, cdr3_col = "JUNCTION")
+#' filtered_df <- filter_sequences_imgt(
+#'   IMGT_BCR_Summary_File,
+#'   cdr3_col = "DNA_Junction"
+#' )
 #' @importFrom dplyr filter
 #' @export
 filter_sequences_imgt <- function(df, cdr3_col) {

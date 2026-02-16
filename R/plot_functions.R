@@ -67,7 +67,7 @@ extract_plate_metadata <- function(df, cell_id_col = "cell_id", barcode_format =
 #' @param plate_size Number of wells in the plate (e.g., 96, 384). Default is 96.
 #' @param plate_type Well type: `"round"` or `"square"`. Default is `"round"`.
 #' @param label Logical. Whether to label each well with its value. Default is `TRUE`.
-#' @import ggplate
+#' @importFrom stats median
 #' @return A `ggplot` object for the requested plate.
 #' @export
 plot_plate_contig_depth <- function(df,
@@ -76,9 +76,11 @@ plot_plate_contig_depth <- function(df,
                                     plate_size = 96,
                                     plate_type = "round",
                                     label = TRUE) {
+
+
   if (!requireNamespace("ggplate", quietly = TRUE)) {
-    stop("Package 'ggplate' is required. Install it with install.packages('ggplate')")
-  }
+  stop("This function requires ggplate. Install it with install.packages('ggplate').", call. = FALSE)
+}
 
   if (!plate_id %in% df$PLATE) {
     stop(sprintf("Plate '%s' not found in data.", plate_id))
@@ -90,15 +92,13 @@ plot_plate_contig_depth <- function(df,
                      stop("Unsupported 'stat' value. Use 'mean', 'median', or provide a function.")
   )
 
-  require(ggplate)
-
   df_plate <- dplyr::filter(df, PLATE == plate_id)
 
   summary_df <- df_plate %>%
     dplyr::group_by(ggplate_well) %>%
     dplyr::summarise(Value = round(stat_fun(CONTIG_DEPTH, na.rm = TRUE), 2), .groups = "drop")
 
-  plate_plot(
+  ggplate::plate_plot(
     data = summary_df,
     position = ggplate_well,
     value = Value,

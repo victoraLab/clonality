@@ -17,9 +17,9 @@
 #' @return Annotated clonality matrix with clonal group information, invisibly returned after internal call to `assigntenx()`.
 #'
 #' @examples
-#' Cellranger3_TCR <- tenx(data = Cellranger3_TCR, method = "unique_paired", cell = "T", clonality_input = c(mismatch = 20), cellranger_version = 3)
-#' Cellranger7_BCR1 <- tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B", only_productive = TRUE, cellranger_version = 7)
-#'
+#' \dontrun{
+#' Cellranger7_BCR1 <- tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B")
+#'}
 #' @import dplyr
 #' @importFrom stringr str_extract
 #' @importFrom openxlsx write.xlsx

@@ -5,17 +5,7 @@
 \alias{IMGT_TCR_Summary_File}
 \title{IMGT TCR Summary File}
 \format{
-A data frame with N rows and 34 columns:
-\describe{
-\item{Sequence_ID}{Unique identifier for the sequence assigned by IMGT.}
-\item{VDOMAIN_Functionality}{Functionality status of the V domain (e.g., productive, unproductive).}
-\item{VGENE_and_allele}{Identified V gene and allele.}
-\item{JGENE_and_allele}{Identified J gene and allele.}
-\item{DNA_Junction}{Nucleotide sequence of the junction region.}
-}
-
-Columns not listed here include detailed scores, region insertions/deletions, trimming counts, comments, and
-alternative identity metrics, all retained for reference and advanced filtering.
+A data frame.
 }
 \source{
 Generated from \verb{1_Summary.txt}, the output of IMGT HighV-QUEST, and processed via \code{data-raw/IMGT_BCR_Summary_File.R}.
@@ -27,6 +17,11 @@ IMGT_TCR_Summary_File
 A processed summary table of T cell receptor (TCR) sequences analyzed using the IMGT HighV-QUEST pipeline.
 Each row represents a unique TCR sequence annotated with V(D)J gene usage, junction details, and
 CDR/FR region lengths.
+}
+\details{
+Key columns: \code{Sequence_ID}, \code{VDOMAIN_Functionality}, \code{VGENE_and_allele},
+\code{JGENE_and_allele}, \code{DNA_Junction}.
+Use \code{names(IMGT_BCR_Summary_File)} for all variables.
 }
 \examples{
 head(IMGT_BCR_Summary_File)

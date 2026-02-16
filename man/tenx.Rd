@@ -51,7 +51,7 @@ Loads and processes 10x Genomics V(D)J output (either as a data frame, file path
 Supports BCR, TCR, and γδ TCR data from Cell Ranger versions 3 (18 columns) and 7 (31 columns).
 }
 \examples{
-Cellranger3_TCR <- tenx(data = Cellranger3_TCR, method = "unique_paired", cell = "T", clonality_input = c(mismatch = 20), cellranger_version = 3)
-Cellranger7_BCR1 <- tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B", only_productive = TRUE, cellranger_version = 7)
-
+\dontrun{
+Cellranger7_BCR1 <- tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B")
+}
 }

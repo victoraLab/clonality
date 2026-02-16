@@ -23,5 +23,8 @@ This function filters out bad sequences from the input data frame based on the f
 }
 }
 \examples{
-filtered_df <- filter_sequences_imgt(df, cdr3_col = "JUNCTION")
+filtered_df <- filter_sequences_imgt(
+  IMGT_BCR_Summary_File,
+  cdr3_col = "DNA_Junction"
+)
 }

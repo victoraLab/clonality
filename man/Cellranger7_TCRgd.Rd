@@ -6,25 +6,6 @@
 \title{Cellranger7 TCR γδ Contig Annotations}
 \format{
 A tibble with N rows and 17+ columns (γδ-specific subset of the standard contig annotation schema):
-\describe{
-\item{barcode}{10x cell barcode identifying the source cell. Use with caution, as cell-calling may be incomplete.}
-\item{contig_id}{Unique identifier for the contig (cell barcode + contig index).}
-\item{length}{Length of the contig sequence (nt).}
-\item{chain}{TCR chain type (TRG or TRD).}
-\item{v_gene}{Assigned V gene segment.}
-\item{d_gene}{Assigned D gene segment (only relevant for δ chains; may be NA).}
-\item{j_gene}{Assigned J gene segment.}
-\item{c_gene}{Assigned constant region gene.}
-\item{full_length}{Logical indicating if the contig is full-length (provided by Cell Ranger).}
-\item{productive}{Logical indicating whether the contig encodes a productive rearrangement.}
-\item{cdr3}{Amino acid sequence of the CDR3 region (if detected).}
-\item{cdr3_nt}{Nucleotide sequence of the CDR3 region.}
-\item{reads}{Number of reads supporting the contig.}
-\item{umis}{Number of UMIs supporting the contig.}
-\item{raw_clonotype_id}{Clonotype ID assigned by Cell Ranger.}
-\item{raw_consensus_id}{Consensus sequence ID if available.}
-\item{exact_subclonotype_id}{Exact subclonotype identifier.}
-}
 }
 \source{
 Generated from 10x Genomics Cell Ranger v7 (\code{all_contig_annotations.csv}) for a γδ TCR dataset.
@@ -43,6 +24,8 @@ processed with 10x Genomics Cell Ranger (v7+).
 \item Several annotation columns are not populated for γδ data and may be entirely \code{NA}.
 \item The \code{d_gene} column is sometimes informative and is retained.
 }
+
+Use \code{names(Cellranger7_TCRgd)} for the full schema.
 }
 \examples{
 head(Cellranger7_TCRgd)

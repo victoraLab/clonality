@@ -1,6 +1,6 @@
 Package: clonality
 Title: Easily Define Groups Of T/B Cells
-Version: 0.0.09
+Version: 0.0.0.9
 Authors@R: 
     person(given = "Tiago Bruno",
            family = "Rezende de Castro",
@@ -8,25 +8,33 @@ Authors@R:
            email = "tiago211287@gmail.com",
            comment = c(ORCID = "0000-0002-0359-0611"))
 Description: Easily Define Groups Of T/B Cells Into The Same Clonal Hierarchy Based On the Cdr3, V and J genes.
-License: `use_mit_license()`, `use_gpl3_license()` or friends to
-    pick a license
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+LazyDataCompression: xz
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-Imports: 
-    stringdist,
-    readxl,
-    stringr,
+Imports:
     dplyr,
-    safejoin (>= 0.1.0),
+    stringdist,
+    furrr,
+    stringr,
+    readxl,
     gtools,
+    data.table,
+    openxlsx,
+    readr,
+    tibble,
+    tidyr
+Suggests:
+    Seurat,
+    ggplot2,
+    patchwork,
+    purrr,
     future,
-    furrr
+    MASS,
+    ggplate,
+    testthat (>= 3.0.0)
 Depends: 
     R (>= 3.5)
-Remotes:
-    moodymudskipper/safejoin
-Suggests: 
-    testthat (>= 3.0.0)
 Config/testthat/edition: 3

@@ -7,7 +7,9 @@
 #' @param sample_column Character. Column to be used as sample to cut the data.
 #' @param metadata_columns Character. Columns to split the data.
 #' @examples
-#' gen_immunarch(seu, proportion = "rm.na",  sample_column = "Conditions")
+#' \dontrun{
+#' gen_immunarch(seu, proportion = "rm.na", sample_column = "Conditions")
+#' }
 #' @import dplyr
 #' @importFrom gtools mixedsort
 #' @importFrom tidyr separate

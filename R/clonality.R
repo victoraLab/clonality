@@ -87,7 +87,7 @@ clonality <- function(data = "example.xlsx",
                        stringsAsFactors = FALSE)
 
   # Check for missing V or J genes and stop execution if any are found
-  if (any(!complete.cases(sub.df))) {
+  if (any(!stats::complete.cases(sub.df))) {
     stop("Some rows contain missing V or J genes.")
   }
 
@@ -116,7 +116,7 @@ clonality <- function(data = "example.xlsx",
     clonal.df <- safe_full_join_coalesce(
       x = imported_df,
       y = clonal.df,
-      by = setNames("cell_id", ident_col)
+      by = stats::setNames("cell_id", ident_col)
     )
   } else {
     clonal.df <- clonal.df[mixedorder(clonal.df$clonality), ]

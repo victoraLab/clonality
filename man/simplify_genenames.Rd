@@ -10,6 +10,8 @@ simplify_genenames(data, cell, drop_all_na_genes = FALSE)
 \item{data}{A data frame containing immune repertoire data with V/J (and optionally D) gene columns.}
 
 \item{cell}{\code{Character}. "T" for T cells or "B" for B cells.}
+
+\item{drop_all_na_genes}{Logical. If TRUE, drop genes that are entirely NA after simplification.}
 }
 \value{
 A list with:

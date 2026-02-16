@@ -24,5 +24,7 @@ gen_immunarch(
 Returns a dataset compatible with the immunarch package.
 }
 \examples{
-gen_immunarch(seu, proportion = "rm.na",  sample_column = "Conditions")
+\dontrun{
+gen_immunarch(seu, proportion = "rm.na", sample_column = "Conditions")
+}
 }

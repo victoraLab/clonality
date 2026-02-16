@@ -6,7 +6,7 @@
 #'
 #' @param data A data frame containing immune repertoire data with V/J (and optionally D) gene columns.
 #' @param cell `Character`. "T" for T cells or "B" for B cells.
-#'
+#' @param drop_all_na_genes Logical. If TRUE, drop genes that are entirely NA after simplification.
 #' @return A list with:
 #' - `clonal.df`: data frame with simplified gene names and added metadata columns.
 #' - `report`: summary data frame with counts of functional types and multiple annotations.

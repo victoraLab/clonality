@@ -12,7 +12,6 @@
 #' @param overwrite Logical. Whether to overwrite clonality columns from seurat.
 
 #' @importFrom stringr str_count
-#' @importFrom Seurat AddMetaData
 #' @export
 #'
 #'
@@ -26,6 +25,10 @@ add_seurat_metadata <- function(seu = NULL,
                                 overwrite = TRUE){
 
   if (is.null(seu)) stop("Please add Seurat object to merge clonality.")
+
+  if (!requireNamespace("Seurat", quietly = TRUE)) {
+    stop("This function requires the 'Seurat' package. Install it first.", call. = FALSE)
+  }
 
   # ensure vector
   cdr3_map <- as.character(cdr3_map)

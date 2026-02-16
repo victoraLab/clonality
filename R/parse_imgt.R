@@ -32,7 +32,7 @@ parse_imgt <- function(path) {
     percent_bad <- length(bad_rows) / total_rows * 100
 
     message(sprintf(
-      "⚠️ IMGT Summary Warning: %d rows (~%.1f%%) appear to contain 'No results' (fewer columns).",
+      "IMGT Summary Warning: %d rows (~%.1f%%) appear to contain 'No results' (fewer columns).",
       length(bad_rows), percent_bad
     ))
   }

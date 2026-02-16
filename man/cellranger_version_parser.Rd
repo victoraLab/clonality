@@ -22,7 +22,9 @@ Returns a parsed data frame and (optionally) validates the number of columns acc
 }
 \examples{
 parsed <- cellranger_version_parser(Cellranger3_TCR, cellranger_version = 3)
-parsed <- cellranger_version_parser("Cellranger3_TCR", cellranger_version = 3)
-parsed <- cellranger_version_parser("path/to/file.csv", ignore_version = TRUE)
+
+tf <- tempfile(fileext = ".csv")
+utils::write.csv(Cellranger3_TCR, tf, row.names = FALSE)
+parsed <- cellranger_version_parser(tf, ignore_version = TRUE)
 
 }

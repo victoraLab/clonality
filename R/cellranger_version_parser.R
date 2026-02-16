@@ -11,8 +11,10 @@
 #'
 #' @examples
 #' parsed <- cellranger_version_parser(Cellranger3_TCR, cellranger_version = 3)
-#' parsed <- cellranger_version_parser("Cellranger3_TCR", cellranger_version = 3)
-#' parsed <- cellranger_version_parser("path/to/file.csv", ignore_version = TRUE)
+#'
+#' tf <- tempfile(fileext = ".csv")
+#' utils::write.csv(Cellranger3_TCR, tf, row.names = FALSE)
+#' parsed <- cellranger_version_parser(tf, ignore_version = TRUE)
 #'
 #' @export
 cellranger_version_parser <- function(data, cellranger_version = 7, ignore_version = FALSE) {
@@ -21,7 +23,7 @@ cellranger_version_parser <- function(data, cellranger_version = 7, ignore_versi
     if (is.character(data)) {
       ext <- tools::file_ext(data)
       if (tolower(ext) == "csv") {
-        data <- read.csv(data, stringsAsFactors = FALSE)
+        data <- utils::read.csv(data, stringsAsFactors = FALSE)
       } else {
         if (exists(data, envir = .GlobalEnv)) {
           data <- get(data, envir = .GlobalEnv)
