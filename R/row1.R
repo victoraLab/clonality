@@ -10,6 +10,6 @@ row1 <- function(x, add_columns) {
 
   x %>%
     dplyr::mutate(rn = 1) %>%
-    tidyr::pivot_wider(names_from = "chain", values_from = selected) %>%
+    tidyr::pivot_wider(names_from = "chain", values_from = dplyr::all_of(selected)) %>%
     dplyr::select(-rn)
 }

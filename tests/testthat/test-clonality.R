@@ -58,3 +58,41 @@ test_that("simplify_genenames throws for invalid cell type", {
 
   })
 
+test_that("clonality does not write an xlsx file unless file is requested", {
+  skip_if_not_installed("openxlsx")
+
+  input_path <- tempfile(fileext = ".xlsx")
+  auto_output_path <- paste0(input_path, ".xlsx")
+
+  openxlsx::write.xlsx(IMGT_BCR_Summary_File[1:5, ], input_path, rowNames = FALSE)
+
+  res <- clonality(
+    data = input_path,
+    ident_col = "Sequence_ID",
+    vgene_col = "VGENE_and_allele",
+    jgene_col = "JGENE_and_allele",
+    cdr3_col = "DNA_Junction",
+    cell = "B",
+    output_original = FALSE,
+    mismatch = 100
+  )
+
+  expect_s3_class(res, "data.frame")
+  expect_false(file.exists(auto_output_path))
+})
+
+test_that("mismatch controls normalized CDR3 distance tolerance, not similarity", {
+  df <- data.frame(
+    Sequence_ID = c("s1", "s2"),
+    VGENE_and_allele = c("IGHV1-1*01", "IGHV1-1*01"),
+    JGENE_and_allele = c("IGHJ1*01", "IGHJ1*01"),
+    JUNCTION = c("AAAA", "AAAT"),
+    stringsAsFactors = FALSE
+  )
+
+  strict <- clonality(df, cell = "B", mismatch = 0)
+  tolerant <- clonality(df, cell = "B", mismatch = 25)
+
+  expect_equal(length(unique(strict$clonality)), 2L)
+  expect_equal(length(unique(tolerant$clonality)), 1L)
+})

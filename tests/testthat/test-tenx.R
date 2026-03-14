@@ -8,10 +8,32 @@ test_that("cellranger_version_parser can detect the version selected is wrong", 
   expect_error(cellranger_version_parser(Cellranger7_BCR1, cellranger_version = 3), "expected to have 18 columns")
 })
 
+test_that("cellranger_version_parser can infer version from bundled data", {
+  parsed <- cellranger_version_parser(Cellranger7_BCR1, cellranger_version = NULL)
+
+  expect_s3_class(parsed, "data.frame")
+  expect_equal(ncol(parsed), 31L)
+})
+
 test_that("tenx rejects invalid clonality method", {
   expect_error(
     tenx(data = NULL, method = "not_a_method")
   )
+})
+
+test_that("tenx works when cellranger_version is omitted", {
+  testthat::local_mocked_bindings(
+    assigntenx = function(list.pairs, ...) list.pairs,
+    .env = environment(tenx)
+  )
+
+  res <- tenx(
+    data = Cellranger7_BCR1,
+    only_productive = TRUE,
+    only_true_cells = TRUE
+  )
+
+  expect_true(length(res) > 0)
 })
 
 test_that("tenx drops empty/NA CDR3s before grouping", {
@@ -104,4 +126,3 @@ test_that("Tgd special handling removes chain=='None' and CDR3 with '*'", {
     expect_equal(length(res[["TRD"]]), 1L)  # barcode C
   })
 })
-

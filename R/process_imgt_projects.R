@@ -5,7 +5,7 @@
 #'
 #' @param project_paths Vector of IMGT project folder paths.
 #' @param cell_type "B" or "T" for B/T cell analysis.
-#' @param mismatch Numeric value (0–100) for CDR3 mismatch tolerance.
+#' @param mismatch Numeric value (0–100) for normalized CDR3 mismatch tolerance.
 #' @param exclude_index Optional vector of indices to exclude.
 #' @param workers Number of parallel workers (cores). Default = available cores - 1.
 #'

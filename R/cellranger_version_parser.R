@@ -44,6 +44,21 @@ cellranger_version_parser <- function(data, cellranger_version = 7, ignore_versi
   if (!isTRUE(ignore_version)) {
     col_count <- ncol(data)
 
+    if (is.null(cellranger_version)) {
+      version_lookup <- c(`18` = 3L, `31` = 7L, `32` = 9L)
+      inferred_version <- version_lookup[[as.character(col_count)]]
+
+      if (is.null(inferred_version)) {
+        stop(
+          "Could not infer Cell Ranger version from column count (",
+          col_count,
+          "). Please set 'cellranger_version' explicitly or use ignore_version = TRUE."
+        )
+      }
+
+      cellranger_version <- inferred_version
+    }
+
     if (cellranger_version == 3 && col_count != 18) {
       stop("Cell Ranger v3 is expected to have 18 columns, but found ", col_count, ".")
     }

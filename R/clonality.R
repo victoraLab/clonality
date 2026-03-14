@@ -12,11 +12,12 @@
 #' @param cdr3_col `Character`. The name of the column containing CDR3 sequences. Default: "JUNCTION".
 #' @param cell `Character`. One of "T" or "B". Specifies T cell or B cell data. Default: "T".
 #' @param output_original `Logical`. If `TRUE`, joins results to the original input. Default: `FALSE`.
-#' @param mismatch `Numeric`. Percent similarity threshold used to define clonality clusters (range: 0–100).
-#'   This defines the maximum allowable difference (as a percentage of CDR3 sequence length) within a clone.
-#'   - A value of `0` means **no differences allowed** (strict clustering: only identical sequences cluster).
-#'   - A value of `100` means **any difference is allowed** (loose clustering: sequences are not subclustered).
-#'   Internally used to calculate clustering height: `hclust_height = mismatch / 100`.
+#' @param mismatch `Numeric`. Percent mismatch tolerance used to subcluster sequences within the same V/J/CDR3-length bin (range: 0–100).
+#'   Internally, pairwise CDR3 string distances are normalized by CDR3 length and the hierarchical tree
+#'   is cut at `hclust_height = mismatch / 100`.
+#'   - A value of `0` means **no mismatch is allowed**: only identical CDR3 sequences cluster together.
+#'   - A value of `10` allows clustering of sequences that differ by up to about 10% of CDR3 length.
+#'   - A value of `100` is the loosest setting and effectively prevents subclustering within a duplicated V/J/length bin.
 #' @param suffix `Character`. A string to append to the clonality group IDs.
 #' @param stringdist_method String distance method passed to `stringdist()`.
 #'   Defaults to "osa" (Optimal String Alignment). Other options include:
@@ -56,7 +57,7 @@ clonality <- function(data = "example.xlsx",
                       ...) {
 
   if (!is.numeric(mismatch) || mismatch < 0 || mismatch > 100) {
-    stop("'mismatch' must be between 0 and 100 (percent similarity threshold).")
+    stop("'mismatch' must be between 0 and 100 (percent mismatch tolerance).")
   }
 
   hclust_height <- mismatch / 100
@@ -129,11 +130,6 @@ clonality <- function(data = "example.xlsx",
 
   if (!is.null(file)) {
     openxlsx::write.xlsx(clonal.df, file, rowNames = FALSE)
-  }
-
-  # Save the output to the R environment or to an .xlsx file
-  if (is.character(data)) {
-    openxlsx::write.xlsx(clonal.df, sprintf("%s.xlsx", data), row.names = FALSE)
   }
 
   if (quiet) return(invisible(clonal.df))

@@ -92,13 +92,17 @@ tenx <- function(data = NULL,
   }
 
   # Run clonality assignment per chain class
-  assigntenx(
-    list.pairs = list.pairs,
-    experiment = experiment,
-    method = method,
-    clonality_input = clonality_input,
-    cell = cell,
-    col_res = col_res,
-    add_columns = add_columns
-  )
+  out_list <- assigntenx(
+              list.pairs = list.pairs,
+              experiment = experiment,
+              method = method,
+              clonality_input = clonality_input,
+              cell = cell,
+              col_res = col_res,
+              add_columns = add_columns
+              )
+
+  obj_names <- paste0("Clonal.output.10x", names(out_list))
+  list2env(stats::setNames(out_list, obj_names), envir = .GlobalEnv)
+  return(out_list)
 }

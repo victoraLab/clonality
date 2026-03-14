@@ -226,11 +226,6 @@ assigntenx <- function(list.pairs = list.pairs,
     clonality_args <- utils::modifyList(default_clonality_args, as.list(clonality_input))
 
 
-    # if user didn't provide a file, build one from experiment + chain class i
-    if (is.null(clonality_args$file) && !is.null(experiment)) {
-      clonality_args$file <- paste0(experiment, "_", i, ".xlsx")
-    }
-
     # Construct full or reduced metadata frame
     df1 <- switch(
       col_res,

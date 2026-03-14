@@ -57,7 +57,13 @@ parse_imgt <- function(path) {
   }
 
   result <- dplyr::left_join(summary, junction[, c("Sequence_ID", "JUNCTION")], by = "Sequence_ID")
-  result <- dplyr::rename(result, DNA_Junction = JUNCTION)
+
+  if ("DNA_Junction" %in% colnames(result) && "JUNCTION" %in% colnames(result)) {
+    result$DNA_Junction <- dplyr::coalesce(result$DNA_Junction, result$JUNCTION)
+    result$JUNCTION <- NULL
+  } else if ("JUNCTION" %in% colnames(result)) {
+    result <- dplyr::rename(result, DNA_Junction = JUNCTION)
+  }
 
   return(result)
 }
