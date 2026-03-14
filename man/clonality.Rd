@@ -37,12 +37,13 @@ clonality(
 
 \item{output_original}{\code{Logical}. If \code{TRUE}, joins results to the original input. Default: \code{FALSE}.}
 
-\item{mismatch}{\code{Numeric}. Percent similarity threshold used to define clonality clusters (range: 0–100).
-This defines the maximum allowable difference (as a percentage of CDR3 sequence length) within a clone.
+\item{mismatch}{\code{Numeric}. Percent mismatch tolerance used to subcluster sequences within the same V/J/CDR3-length bin (range: 0–100).
+Internally, pairwise CDR3 string distances are normalized by CDR3 length and the hierarchical tree
+is cut at \code{hclust_height = mismatch / 100}.
 \itemize{
-\item A value of \code{0} means \strong{no differences allowed} (strict clustering: only identical sequences cluster).
-\item A value of \code{100} means \strong{any difference is allowed} (loose clustering: sequences are not subclustered).
-Internally used to calculate clustering height: \code{hclust_height = mismatch / 100}.
+\item A value of \code{0} means \strong{no mismatch is allowed}: only identical CDR3 sequences cluster together.
+\item A value of \code{10} allows clustering of sequences that differ by up to about 10\% of CDR3 length.
+\item A value of \code{100} is the loosest setting and effectively prevents subclustering within a duplicated V/J/length bin.
 }}
 
 \item{suffix}{\code{Character}. A string to append to the clonality group IDs.}

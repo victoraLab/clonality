@@ -17,7 +17,7 @@ process_imgt_projects(
 
 \item{cell_type}{"B" or "T" for B/T cell analysis.}
 
-\item{mismatch}{Numeric value (0–100) for CDR3 mismatch tolerance.}
+\item{mismatch}{Numeric value (0–100) for normalized CDR3 mismatch tolerance.}
 
 \item{exclude_index}{Optional vector of indices to exclude.}
 
