@@ -9,6 +9,7 @@ open_circos_viewer(
   ideogram_by = NULL,
   clonality_col = "clonality",
   size_col = NULL,
+  feature_col = NULL,
   band_labels = TRUE,
   open = TRUE
 )
@@ -24,6 +25,9 @@ When \code{data} is provided, this argument is required.}
 \item{size_col}{Optional column name or position with per-row abundances.
 If omitted, rows are counted within each \code{clonality_col} x \code{ideogram_by}
 combination.}
+
+\item{feature_col}{Optional column name or position used to decorate clone
+bands, for example cell type.}
 
 \item{band_labels}{\code{Logical}. If \code{TRUE}, show clone IDs as band labels when
 preloading data into the viewer.}
@@ -49,9 +53,10 @@ example_df <- data.frame(
   tissue = factor(
     c("M1LP_PC", "M1PP_GC", "M1LP_PC", "M1LP_PC", "M2LP_PC"),
     levels = c("M1LP_PC", "M1PP_GC", "M2LP_PC")
-  )
+  ),
+  cell_type = c("PC", "PC", "GC", "PC", "PC")
 )
 
-open_circos_viewer(example_df, ideogram_by = "tissue", open = FALSE)
+open_circos_viewer(example_df, ideogram_by = "tissue", feature_col = "cell_type", open = FALSE)
 }
 }

@@ -12,6 +12,8 @@
 #' @param size_col Optional column name or position with per-row abundances.
 #'   If omitted, rows are counted within each `clonality_col` x `ideogram_by`
 #'   combination.
+#' @param feature_col Optional column name or position used to decorate clone
+#'   bands, for example cell type.
 #' @param band_labels `Logical`. If `TRUE`, show clone IDs as band labels when
 #'   preloading data into the viewer.
 #' @param open `Logical`. If `TRUE`, open the viewer in the default browser.
@@ -28,16 +30,18 @@
 #'   tissue = factor(
 #'     c("M1LP_PC", "M1PP_GC", "M1LP_PC", "M1LP_PC", "M2LP_PC"),
 #'     levels = c("M1LP_PC", "M1PP_GC", "M2LP_PC")
-#'   )
+#'   ),
+#'   cell_type = c("PC", "PC", "GC", "PC", "PC")
 #' )
 #'
-#' open_circos_viewer(example_df, ideogram_by = "tissue", open = FALSE)
+#' open_circos_viewer(example_df, ideogram_by = "tissue", feature_col = "cell_type", open = FALSE)
 #' }
 #' @export
 open_circos_viewer <- function(data = NULL,
                                ideogram_by = NULL,
                                clonality_col = "clonality",
                                size_col = NULL,
+                               feature_col = NULL,
                                band_labels = TRUE,
                                open = TRUE) {
   viewer_path <- find_circos_viewer_path()
@@ -51,7 +55,8 @@ open_circos_viewer <- function(data = NULL,
       data = data,
       clonotype_col = clonality_col,
       group_col = ideogram_by,
-      size_col = size_col
+      size_col = size_col,
+      feature_col = feature_col
     )
 
     viewer_path <- build_circos_viewer_html(

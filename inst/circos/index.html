@@ -513,12 +513,14 @@ clL,7,LN`;
       let idIndex = 0;
       let sizeIndex = 1;
       let groupIndex = 2;
+      let featureIndex = -1;
 
       if (headerLooksNamed) {
         startRow = 1;
         idIndex = header.findIndex((value) => ["id", "clonotype", "cdr3", "clone", "sequence"].includes(value));
         sizeIndex = header.findIndex((value) => ["size", "count", "abundance", "reads"].includes(value));
         groupIndex = header.findIndex((value) => ["group", "sample", "condition", "compartment"].includes(value));
+        featureIndex = header.findIndex((value) => ["feature", "annotation", "cell_type", "celltype", "type", "label"].includes(value));
 
         if (idIndex < 0 || groupIndex < 0) {
           throw new Error("Clonotype table headers must include id/clonotype and group/sample columns.");
@@ -540,6 +542,7 @@ clL,7,LN`;
         const group = row[groupIndex];
         const rawSize = sizeIndex >= 0 ? row[sizeIndex] : "1";
         const size = Number(rawSize);
+        const feature = featureIndex >= 0 ? row[featureIndex] : "";
 
         if (!id || !group) {
           throw new Error(`Missing id or group on data row ${index + startRow + 1}.`);
@@ -549,7 +552,7 @@ clL,7,LN`;
           throw new Error(`Invalid size value on data row ${index + startRow + 1}.`);
         }
 
-        return { id, group, size };
+        return { id, group, size, feature: feature || null };
       });
 
       if (!records.length) {
@@ -621,6 +624,12 @@ clL,7,LN`;
       };
       const base = schemes[name] || d3.schemeTableau10;
       return Array.from({ length: count }, (_, i) => base[i % base.length]);
+    }
+
+    function featurePalette(values) {
+      const distinct = Array.from(new Set(values.filter(Boolean)));
+      const base = d3.schemeSet2.concat(d3.schemeTableau10, d3.schemeDark2);
+      return new Map(distinct.map((value, index) => [value, base[index % base.length]]));
     }
 
     function describeTotals(matrix) {
@@ -714,8 +723,13 @@ clL,7,LN`;
           groupOrder.push(record.group);
         }
         const key = `${record.group}|||${record.id}`;
-        const previous = aggregated.get(key) || { id: record.id, group: record.group, size: 0 };
+        const previous = aggregated.get(key) || { id: record.id, group: record.group, size: 0, feature: record.feature || null };
         previous.size += record.size;
+        if (!previous.feature && record.feature) {
+          previous.feature = record.feature;
+        } else if (previous.feature && record.feature && previous.feature !== record.feature) {
+          previous.feature = "Mixed";
+        }
         aggregated.set(key, previous);
       });
 
@@ -970,6 +984,9 @@ clL,7,LN`;
       const layout = buildClonotypeLayout(records, padAngle);
       const colors = colorArray(palette, layout.groups.length);
       const color = d3.scaleOrdinal(d3.range(layout.groups.length), colors);
+      const featureColors = featurePalette(
+        layout.groups.flatMap((groupItem) => groupItem.clones.map((clone) => clone.feature))
+      );
       const showBandLabels = bandLabelsInput.checked;
 
       const svg = d3
@@ -1089,7 +1106,7 @@ clL,7,LN`;
         .data(layout.groups.flatMap((groupItem) => groupItem.clones))
         .join("path")
         .attr("class", "clone-band")
-        .attr("fill", (d) => color(d.groupIndex))
+        .attr("fill", (d) => d.feature ? featureColors.get(d.feature) : color(d.groupIndex))
         .attr("fill-opacity", (d) => (d.shared ? 0.92 : 0.28))
         .attr("stroke", (d) => d3.color(color(d.groupIndex)).darker(0.55))
         .attr("stroke-width", 0.8)
@@ -1097,7 +1114,7 @@ clL,7,LN`;
         .on("mousemove", function(event, d) {
           showTooltip(
             event,
-            `<strong>${d.id}</strong><br>Group: ${d.group}<br>Size: ${formatValue(d.size)}<br>${d.shared ? "Shared clonotype" : "Unique clonotype"}`
+            `<strong>${d.id}</strong><br>Group: ${d.group}<br>Size: ${formatValue(d.size)}${d.feature ? `<br>Feature: ${d.feature}` : ""}<br>${d.shared ? "Shared clonotype" : "Unique clonotype"}`
           );
           chart.selectAll(".clone-band").attr("opacity", (item) => (item.id === d.id ? 1 : 0.18));
           chart.selectAll(".ribbon").attr("opacity", (item) => (item.id === d.id ? 0.92 : 0.05));
@@ -1132,6 +1149,27 @@ clL,7,LN`;
           `)
           .attr("text-anchor", (d) => (d.labelAngle > Math.PI ? "end" : "start"))
           .text((d) => d.id);
+      }
+
+      if (featureColors.size) {
+        const legend = svg.append("g").attr("transform", `translate(${width / 2 - 190}, ${-height / 2 + 92})`);
+        Array.from(featureColors.entries()).forEach(([feature, fill], index) => {
+          const row = legend.append("g").attr("transform", `translate(0, ${index * 20})`);
+          row.append("rect")
+            .attr("width", 12)
+            .attr("height", 12)
+            .attr("rx", 3)
+            .attr("fill", fill)
+            .attr("stroke", "#48585b")
+            .attr("stroke-width", 0.6);
+          row.append("text")
+            .attr("x", 18)
+            .attr("y", 10)
+            .attr("fill", "#243234")
+            .attr("font-size", 11)
+            .attr("font-weight", 600)
+            .text(feature);
+        });
       }
 
       chart
@@ -1174,6 +1212,7 @@ clL,7,LN`;
         `${formatValue(layout.totalClones)} clonotype bands`,
         `${formatValue(layout.sharedCloneCount)} shared clonotypes`,
         `${formatValue(layout.uniqueCount)} unique clonotypes`,
+        `${formatValue(featureColors.size)} annotated features`,
         `${formatValue(layout.ribbons.length)} ribbons`,
         `${formatValue(derivedStats.total)} derived pairwise weight`
       ]);

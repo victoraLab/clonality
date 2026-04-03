@@ -9,6 +9,7 @@ circos_viewer_input(
   clonotype_col = "clonality",
   group_col,
   size_col = NULL,
+  feature_col = NULL,
   drop_zero = TRUE
 )
 }
@@ -22,10 +23,16 @@ circos_viewer_input(
 \item{size_col}{Optional column name or position with numeric abundances.
 If omitted, rows are counted.}
 
+\item{feature_col}{Optional column name or position with clone-band
+annotations such as cell type. Distinct values within the same clonotype x
+group combination are collapsed to a single label, or \code{"Mixed"} if more
+than one unique non-missing value is present.}
+
 \item{drop_zero}{\code{Logical}. If \code{TRUE}, rows with \code{size <= 0} are removed.}
 }
 \value{
-A data frame with columns \code{clonotype}, \code{size}, and \code{group}.
+A data frame with columns \code{clonotype}, \code{size}, and \code{group}, plus
+\code{feature} when \code{feature_col} is supplied.
 If \code{group_col} is a factor, ideograms follow its level order.
 }
 \description{
@@ -36,8 +43,9 @@ counts rows per clonotype and group.
 \examples{
 example_df <- data.frame(
   clonality = c("1.1", "1.1", "2.1", "6.1", "6.1"),
-  condition = c("M1LP_PC", "M1PP_GC", "M1LP_PC", "M1LP_PC", "M2LP_PC")
+  condition = c("M1LP_PC", "M1PP_GC", "M1LP_PC", "M1LP_PC", "M2LP_PC"),
+  cell_type = c("PC", "PC", "GC", "PC", "PC")
 )
 
-circos_viewer_input(example_df, group_col = "condition")
+circos_viewer_input(example_df, group_col = "condition", feature_col = "cell_type")
 }

@@ -69,23 +69,30 @@ circos_viewer_wide_to_long <- function(data, clone_col = "Clone_ID", drop_zero =
 #' @param group_col Column name or position with the group or condition.
 #' @param size_col Optional column name or position with numeric abundances.
 #'   If omitted, rows are counted.
+#' @param feature_col Optional column name or position with clone-band
+#'   annotations such as cell type. Distinct values within the same clonotype x
+#'   group combination are collapsed to a single label, or `"Mixed"` if more
+#'   than one unique non-missing value is present.
 #' @param drop_zero `Logical`. If `TRUE`, rows with `size <= 0` are removed.
 #'
-#' @return A data frame with columns `clonotype`, `size`, and `group`.
+#' @return A data frame with columns `clonotype`, `size`, and `group`, plus
+#'   `feature` when `feature_col` is supplied.
 #'   If `group_col` is a factor, ideograms follow its level order.
 #'
 #' @examples
 #' example_df <- data.frame(
 #'   clonality = c("1.1", "1.1", "2.1", "6.1", "6.1"),
-#'   condition = c("M1LP_PC", "M1PP_GC", "M1LP_PC", "M1LP_PC", "M2LP_PC")
+#'   condition = c("M1LP_PC", "M1PP_GC", "M1LP_PC", "M1LP_PC", "M2LP_PC"),
+#'   cell_type = c("PC", "PC", "GC", "PC", "PC")
 #' )
 #'
-#' circos_viewer_input(example_df, group_col = "condition")
+#' circos_viewer_input(example_df, group_col = "condition", feature_col = "cell_type")
 #' @export
 circos_viewer_input <- function(data,
                                 clonotype_col = "clonality",
                                 group_col,
                                 size_col = NULL,
+                                feature_col = NULL,
                                 drop_zero = TRUE) {
   if (!is.data.frame(data)) {
     stop("`data` must be a data frame.", call. = FALSE)
@@ -95,21 +102,34 @@ circos_viewer_input <- function(data,
   group_col <- resolve_circos_col(data, group_col)
   group_values <- data[[group_col]]
   group_order <- if (is.factor(group_values)) levels(group_values) else unique(as.character(group_values))
+  has_feature <- !is.null(feature_col)
+
+  if (has_feature) {
+    feature_col <- resolve_circos_col(data, feature_col)
+  }
 
   if (is.null(size_col)) {
     out <- data |>
       dplyr::group_by(.data[[clonotype_col]], .data[[group_col]]) |>
       dplyr::summarise(size = dplyr::n(), .groups = "drop")
 
-    names(out) <- c("clonotype", "group", "size")
   } else {
     size_col <- resolve_circos_col(data, size_col)
 
     out <- data |>
       dplyr::group_by(.data[[clonotype_col]], .data[[group_col]]) |>
       dplyr::summarise(size = sum(as.numeric(.data[[size_col]]), na.rm = TRUE), .groups = "drop")
+  }
 
-    names(out) <- c("clonotype", "group", "size")
+  names(out) <- c("clonotype", "group", "size")
+
+  if (has_feature) {
+    feature_map <- data |>
+      dplyr::group_by(.data[[clonotype_col]], .data[[group_col]]) |>
+      dplyr::summarise(feature = collapse_circos_feature(.data[[feature_col]]), .groups = "drop")
+
+    names(feature_map)[1:2] <- c("clonotype", "group")
+    out <- dplyr::left_join(out, feature_map, by = c("clonotype", "group"))
   }
 
   out$clonotype <- as.character(out$clonotype)
@@ -124,7 +144,8 @@ circos_viewer_input <- function(data,
     out <- out[out$size > 0, , drop = FALSE]
   }
 
-  out <- out[order(match(out$group, group_order), -out$size, out$clonotype), c("clonotype", "size", "group")]
+  keep_cols <- c("clonotype", "size", "group", if ("feature" %in% names(out)) "feature")
+  out <- out[order(match(out$group, group_order), -out$size, out$clonotype), keep_cols]
   rownames(out) <- NULL
   out
 }
@@ -143,4 +164,19 @@ resolve_circos_col <- function(data, col) {
   }
 
   col
+}
+
+collapse_circos_feature <- function(values) {
+  values <- unique(trimws(as.character(values)))
+  values <- values[nzchar(values) & !is.na(values)]
+
+  if (!length(values)) {
+    return(NA_character_)
+  }
+
+  if (length(values) == 1L) {
+    return(values)
+  }
+
+  "Mixed"
 }
