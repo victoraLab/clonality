@@ -8,6 +8,7 @@
 #' @param drop_zero `Logical`. If `TRUE`, rows with `size <= 0` are removed.
 #'
 #' @return A data frame with columns `clonotype`, `size`, and `group`.
+#'   Group order follows the original column order in `data`.
 #'
 #' @examples
 #' wide_df <- data.frame(
@@ -26,6 +27,7 @@ circos_viewer_wide_to_long <- function(data, clone_col = "Clone_ID", drop_zero =
 
   clone_col <- resolve_circos_col(data, clone_col)
   value_cols <- setdiff(names(data), clone_col)
+  group_order <- value_cols
 
   if (!length(value_cols)) {
     stop("`data` must contain at least one group column besides `clone_col`.", call. = FALSE)
@@ -51,7 +53,7 @@ circos_viewer_wide_to_long <- function(data, clone_col = "Clone_ID", drop_zero =
     out <- out[out$size > 0, , drop = FALSE]
   }
 
-  out <- out[order(out$group, -out$size, out$clonotype), c("clonotype", "size", "group")]
+  out <- out[order(match(out$group, group_order), -out$size, out$clonotype), c("clonotype", "size", "group")]
   rownames(out) <- NULL
   out
 }
@@ -70,6 +72,7 @@ circos_viewer_wide_to_long <- function(data, clone_col = "Clone_ID", drop_zero =
 #' @param drop_zero `Logical`. If `TRUE`, rows with `size <= 0` are removed.
 #'
 #' @return A data frame with columns `clonotype`, `size`, and `group`.
+#'   If `group_col` is a factor, ideograms follow its level order.
 #'
 #' @examples
 #' example_df <- data.frame(
@@ -90,6 +93,8 @@ circos_viewer_input <- function(data,
 
   clonotype_col <- resolve_circos_col(data, clonotype_col)
   group_col <- resolve_circos_col(data, group_col)
+  group_values <- data[[group_col]]
+  group_order <- if (is.factor(group_values)) levels(group_values) else unique(as.character(group_values))
 
   if (is.null(size_col)) {
     out <- data |>
@@ -119,7 +124,7 @@ circos_viewer_input <- function(data,
     out <- out[out$size > 0, , drop = FALSE]
   }
 
-  out <- out[order(out$group, -out$size, out$clonotype), c("clonotype", "size", "group")]
+  out <- out[order(match(out$group, group_order), -out$size, out$clonotype), c("clonotype", "size", "group")]
   rownames(out) <- NULL
   out
 }

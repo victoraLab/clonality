@@ -111,6 +111,23 @@
       margin-top: 18px;
     }
 
+    .toggle-row {
+      margin-top: 14px;
+    }
+
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    .checkbox input {
+      width: auto;
+      margin: 0;
+    }
+
     button {
       border: 0;
       border-radius: 999px;
@@ -361,6 +378,13 @@ clL,7,LN</textarea>
         </div>
       </div>
 
+      <div class="toggle-row">
+        <label class="checkbox" for="bandLabelsInput">
+          <input id="bandLabelsInput" type="checkbox" checked>
+          <span>Show clone band labels</span>
+        </label>
+      </div>
+
       <div class="button-row">
         <button id="renderBtn" class="primary">Render Plot</button>
         <button id="sampleBtn" class="secondary">Load Example</button>
@@ -396,6 +420,7 @@ clL,7,LN</textarea>
 
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script>
+    const preloadPayload = window.__CLONALITY_CIRCOS_PRELOAD__ || null;
     const sampleMatrix = `Group,Blood,Tumor,Spleen,LN
 Blood,18,7,3,5
 Tumor,6,22,8,9
@@ -434,6 +459,7 @@ clL,7,LN`;
     const sampleBtn = document.getElementById("sampleBtn");
     const svgBtn = document.getElementById("svgBtn");
     const pngBtn = document.getElementById("pngBtn");
+    const bandLabelsInput = document.getElementById("bandLabelsInput");
 
     let currentSvg = null;
     let currentFigure = null;
@@ -944,6 +970,7 @@ clL,7,LN`;
       const layout = buildClonotypeLayout(records, padAngle);
       const colors = colorArray(palette, layout.groups.length);
       const color = d3.scaleOrdinal(d3.range(layout.groups.length), colors);
+      const showBandLabels = bandLabelsInput.checked;
 
       const svg = d3
         .select(chartRoot)
@@ -1081,6 +1108,32 @@ clL,7,LN`;
           chart.selectAll(".ribbon").attr("opacity", 0.72);
         });
 
+      if (showBandLabels) {
+        chart
+          .append("g")
+          .selectAll("text")
+          .data(
+            layout.groups
+              .flatMap((groupItem) => groupItem.clones)
+              .filter((clone) => clone.endAngle - clone.startAngle >= 0.05)
+          )
+          .join("text")
+          .each((d) => {
+            d.labelAngle = (d.startAngle + d.endAngle) / 2;
+          })
+          .attr("dy", "0.32em")
+          .attr("font-size", 9)
+          .attr("font-weight", 600)
+          .attr("fill", "#243234")
+          .attr("transform", (d) => `
+            rotate(${(d.labelAngle * 180) / Math.PI - 90})
+            translate(${bandOuterRadius + 12})
+            ${d.labelAngle > Math.PI ? "rotate(180)" : ""}
+          `)
+          .attr("text-anchor", (d) => (d.labelAngle > Math.PI ? "end" : "start"))
+          .text((d) => d.id);
+      }
+
       chart
         .append("g")
         .attr("fill-opacity", 0.72)
@@ -1156,11 +1209,56 @@ clL,7,LN`;
       if (inputMode.value === "matrix") {
         inputHint.textContent = "Paste a labeled or unlabeled square matrix. Diagonal values can represent within-group counts.";
         dataInput.value = sampleMatrix;
+        bandLabelsInput.disabled = true;
       } else {
         inputHint.textContent = "Paste id,size,group style data. The plot will sort clonotypes from larger to smaller and leave unique clonotypes visible with no ribbons.";
         dataInput.value = sampleClonotypes;
+        bandLabelsInput.disabled = false;
       }
       labelsInput.value = "";
+    }
+
+    function applyPreloadPayload(payload) {
+      if (!payload || typeof payload !== "object") {
+        return false;
+      }
+
+      inputMode.value = payload.mode === "matrix" ? "matrix" : "clonotypes";
+      syncModeUi();
+
+      if (typeof payload.data === "string" && payload.data.trim()) {
+        dataInput.value = payload.data.trim();
+      }
+
+      if (typeof payload.labels === "string") {
+        labelsInput.value = payload.labels;
+      }
+
+      if (typeof payload.showBandLabels === "boolean") {
+        bandLabelsInput.checked = payload.showBandLabels;
+      }
+
+      if (payload.width) {
+        document.getElementById("widthInput").value = payload.width;
+      }
+
+      if (payload.height) {
+        document.getElementById("heightInput").value = payload.height;
+      }
+
+      if (payload.padAngle) {
+        document.getElementById("padInput").value = payload.padAngle;
+      }
+
+      if (payload.palette) {
+        document.getElementById("schemeInput").value = payload.palette;
+      }
+
+      if (payload.autoRender !== false) {
+        runRender();
+      }
+
+      return true;
     }
 
     renderBtn.addEventListener("click", runRender);
@@ -1173,11 +1271,18 @@ clL,7,LN`;
       syncModeUi();
       runRender();
     });
+    bandLabelsInput.addEventListener("change", () => {
+      if (inputMode.value === "clonotypes") {
+        runRender();
+      }
+    });
     svgBtn.addEventListener("click", downloadSvg);
     pngBtn.addEventListener("click", downloadPng);
 
-    syncModeUi();
-    runRender();
+    if (!applyPreloadPayload(preloadPayload)) {
+      syncModeUi();
+      runRender();
+    }
   </script>
 </body>
 </html>
