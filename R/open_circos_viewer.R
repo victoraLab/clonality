@@ -77,8 +77,8 @@ build_circos_viewer_html <- function(template_path, viewer_data, band_labels = T
   payload <- paste(
     "<script>",
     sprintf(
-      "window.__CLONALITY_CIRCOS_PRELOAD__ = { mode: \"clonotypes\", data: \"%s\", autoRender: true, showBandLabels: %s };",
-      encode_js_string(circos_viewer_to_tsv(viewer_data)),
+      "window.__CLONALITY_CIRCOS_PRELOAD__ = { mode: \"clonotypes\", data: `%s`, autoRender: true, showBandLabels: %s };",
+      encode_js_template(circos_viewer_to_tsv(viewer_data)),
       tolower(as.character(isTRUE(band_labels)))
     ),
     "</script>",
@@ -123,6 +123,14 @@ encode_js_string <- function(x) {
   x <- gsub("\\\\", "\\\\\\\\", x)
   x <- gsub("\"", "\\\\\"", x)
   x <- gsub("\r", "", x, fixed = TRUE)
-  x <- gsub("\n", "\\\\n", x, fixed = TRUE)
+  x <- gsub("\n", "\\n", x, fixed = TRUE)
+  gsub("</script>", "<\\\\/script>", x, fixed = TRUE)
+}
+
+encode_js_template <- function(x) {
+  x <- gsub("\\\\", "\\\\\\\\", x)
+  x <- gsub("`", "\\\\`", x, fixed = TRUE)
+  x <- gsub("${", "\\${", x, fixed = TRUE)
+  x <- gsub("\r", "", x, fixed = TRUE)
   gsub("</script>", "<\\\\/script>", x, fixed = TRUE)
 }
