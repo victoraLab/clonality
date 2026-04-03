@@ -15,6 +15,7 @@ circos_viewer_wide_to_long(data, clone_col = "Clone_ID", drop_zero = TRUE)
 }
 \value{
 A data frame with columns \code{clonotype}, \code{size}, and \code{group}.
+Group order follows the original column order in \code{data}.
 }
 \description{
 Turns a wide table with one clonotype column and one column per group into

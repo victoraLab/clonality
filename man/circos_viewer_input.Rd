@@ -26,6 +26,7 @@ If omitted, rows are counted.}
 }
 \value{
 A data frame with columns \code{clonotype}, \code{size}, and \code{group}.
+If \code{group_col} is a factor, ideograms follow its level order.
 }
 \description{
 Converts cell-level or contig-level tables into the long format expected by

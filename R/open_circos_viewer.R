@@ -40,13 +40,7 @@ open_circos_viewer <- function(data = NULL,
                                size_col = NULL,
                                band_labels = TRUE,
                                open = TRUE) {
-  viewer_path <- system.file("circos", "index.html", package = "clonality")
-
-  if (!nzchar(viewer_path)) {
-    stop("The Circos viewer could not be found in the installed clonality package.", call. = FALSE)
-  }
-
-  viewer_path <- normalizePath(viewer_path, winslash = "/", mustWork = TRUE)
+  viewer_path <- find_circos_viewer_path()
 
   if (!is.null(data)) {
     if (missing(ideogram_by) || is.null(ideogram_by)) {
@@ -87,18 +81,31 @@ build_circos_viewer_html <- function(template_path, viewer_data, band_labels = T
   )
 
   template_lines <- readLines(template_path, warn = FALSE)
-  marker <- '<script src="https://d3js.org/d3.v7.min.js"></script>'
-  match_idx <- match(marker, template_lines)
+  match_idx <- grep("d3js\\.org/d3\\.v7\\.min\\.js", template_lines)
 
-  if (is.na(match_idx)) {
+  if (!length(match_idx)) {
     stop("Could not inject preloaded data into the Circos viewer template.", call. = FALSE)
   }
 
-  template_lines <- append(template_lines, payload, after = match_idx - 1L)
+  template_lines <- append(template_lines, payload, after = match_idx[[1]] - 1L)
 
   temp_path <- tempfile(pattern = "clonality-circos-", fileext = ".html")
   writeLines(template_lines, temp_path, useBytes = TRUE)
   normalizePath(temp_path, winslash = "/", mustWork = TRUE)
+}
+
+find_circos_viewer_path <- function() {
+  local_path <- file.path(getwd(), "inst", "circos", "index.html")
+  if (file.exists(local_path)) {
+    return(normalizePath(local_path, winslash = "/", mustWork = TRUE))
+  }
+
+  installed_path <- system.file("circos", "index.html", package = "clonality")
+  if (nzchar(installed_path) && file.exists(installed_path)) {
+    return(normalizePath(installed_path, winslash = "/", mustWork = TRUE))
+  }
+
+  stop("The Circos viewer could not be found in the installed clonality package.", call. = FALSE)
 }
 
 circos_viewer_to_tsv <- function(viewer_data) {

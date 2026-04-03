@@ -4,9 +4,30 @@
 \alias{open_circos_viewer}
 \title{Open the bundled Circos D3 viewer}
 \usage{
-open_circos_viewer(open = TRUE)
+open_circos_viewer(
+  data = NULL,
+  ideogram_by = NULL,
+  clonality_col = "clonality",
+  size_col = NULL,
+  band_labels = TRUE,
+  open = TRUE
+)
 }
 \arguments{
+\item{data}{Optional data frame to preload into the viewer.}
+
+\item{ideogram_by}{Optional column name or position defining the ideograms.
+When \code{data} is provided, this argument is required.}
+
+\item{clonality_col}{Column name or position containing clonotype IDs.}
+
+\item{size_col}{Optional column name or position with per-row abundances.
+If omitted, rows are counted within each \code{clonality_col} x \code{ideogram_by}
+combination.}
+
+\item{band_labels}{\code{Logical}. If \code{TRUE}, show clone IDs as band labels when
+preloading data into the viewer.}
+
 \item{open}{\code{Logical}. If \code{TRUE}, open the viewer in the default browser.
 If \code{FALSE}, only return the installed file path.}
 }
@@ -15,10 +36,22 @@ Invisibly returns the path to the installed HTML file.
 }
 \description{
 Opens the package's standalone HTML viewer in the user's default browser.
-The viewer is installed from \code{inst/circos/index.html}.
+The viewer is installed from \code{inst/circos/index.html}. If \code{data} is
+supplied, the viewer is preloaded and rendered automatically from a
+clonality-style data frame without writing a manual CSV file.
 }
 \examples{
 \dontrun{
 open_circos_viewer()
+
+example_df <- data.frame(
+  clonality = c("1.1", "1.1", "2.1", "6.1", "6.1"),
+  tissue = factor(
+    c("M1LP_PC", "M1PP_GC", "M1LP_PC", "M1LP_PC", "M2LP_PC"),
+    levels = c("M1LP_PC", "M1PP_GC", "M2LP_PC")
+  )
+)
+
+open_circos_viewer(example_df, ideogram_by = "tissue", open = FALSE)
 }
 }
