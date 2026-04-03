@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clonality Sharing Chord Plot</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --panel: rgba(255, 251, 245, 0.92);
+      --panel-strong: #fffdf8;
+      --ink: #1f2a2c;
+      --muted: #59666a;
+      --accent: #0c7c59;
+      --accent-2: #d95d39;
+      --line: rgba(31, 42, 44, 0.12);
+      --shadow: 0 24px 60px rgba(52, 40, 28, 0.12);
+      --radius: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(217, 93, 57, 0.16), transparent 28%),
+        radial-gradient(circle at top right, rgba(12, 124, 89, 0.18), transparent 24%),
+        linear-gradient(145deg, #efe5d7 0%, #f7f2eb 45%, #eee6db 100%);
+    }
+
+    .shell {
+      width: min(1400px, calc(100% - 32px));
+      margin: 24px auto;
+      display: grid;
+      grid-template-columns: 380px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .controls {
+      padding: 24px;
+      position: sticky;
+      top: 24px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    .lede {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.5;
+    }
+
+    .label {
+      display: block;
+      margin: 18px 0 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    textarea,
+    input[type="number"],
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel-strong);
+      color: var(--ink);
+      font: inherit;
+      padding: 14px 16px;
+    }
+
+    textarea {
+      min-height: 210px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .primary {
+      color: white;
+      background: linear-gradient(135deg, var(--accent), #159a70);
+      box-shadow: 0 14px 30px rgba(12, 124, 89, 0.28);
+    }
+
+    .secondary {
+      background: #fff8ef;
+      color: var(--ink);
+      border: 1px solid rgba(31, 42, 44, 0.08);
+    }
+
+    .secondary:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+      transform: none;
+    }
+
+    .status {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.64);
+      border: 1px solid rgba(31, 42, 44, 0.08);
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .status.error {
+      color: #8f2d1b;
+      background: rgba(217, 93, 57, 0.12);
+      border-color: rgba(217, 93, 57, 0.18);
+    }
+
+    .notes {
+      margin-top: 16px;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .viz-panel {
+      padding: 20px;
+      min-height: calc(100vh - 48px);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 8px 4px 0;
+    }
+
+    .toolbar h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .toolbar p {
+      margin: 4px 0 0;
+      color: var(--muted);
+    }
+
+    .viz-wrap {
+      position: relative;
+      flex: 1;
+      border-radius: calc(var(--radius) - 6px);
+      background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.28)),
+        linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0.18));
+      border: 1px solid rgba(255,255,255,0.52);
+      overflow: hidden;
+      min-height: 680px;
+    }
+
+    #chart {
+      width: 100%;
+      height: 100%;
+      min-height: 680px;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .group path {
+      transition: opacity 160ms ease;
+    }
+
+    .ribbon {
+      mix-blend-mode: multiply;
+      transition: opacity 160ms ease;
+    }
+
+    .tooltip {
+      position: absolute;
+      pointer-events: none;
+      background: rgba(23, 31, 33, 0.95);
+      color: white;
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-size: 0.88rem;
+      line-height: 1.35;
+      max-width: 260px;
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+      opacity: 0;
+      transform: translate(10px, 10px);
+      transition: opacity 120ms ease;
+    }
+
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.62);
+      border: 1px solid rgba(31, 42, 44, 0.08);
+    }
+
+    .hint {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .input-mode {
+      margin-top: 8px;
+    }
+
+    a {
+      color: var(--accent);
+    }
+
+    @media (max-width: 1080px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        position: static;
+      }
+
+      .viz-panel {
+        min-height: auto;
+      }
+
+      .viz-wrap,
+      #chart {
+        min-height: 520px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="panel controls">
+      <h1>Clonality Sharing Circos Viewer</h1>
+      <p class="lede">
+        Paste either a square sharing matrix or the original clonotype table and render a browser-based Circos-style plot for BCR/TCR sharing.
+      </p>
+
+      <label class="label" for="inputMode">Input mode</label>
+      <select id="inputMode" class="input-mode">
+        <option value="clonotypes">Clonotype table</option>
+        <option value="matrix">Sharing matrix</option>
+      </select>
+      <p id="inputHint" class="hint">
+        Paste `id,size,group` style data. The plot will sort clonotypes from larger to smaller within each group and leave unique clonotypes visible with no ribbons.
+      </p>
+
+      <label class="label" for="dataInput">Data</label>
+      <textarea id="dataInput" spellcheck="false">clonotype,size,group
+clA,40,Blood
+clB,28,Blood
+clC,22,Blood
+clD,18,Blood
+clE,10,Blood
+clA,36,Tumor
+clC,20,Tumor
+clF,26,Tumor
+clG,14,Tumor
+clH,9,Tumor
+clB,24,Spleen
+clC,16,Spleen
+clI,13,Spleen
+clJ,8,Spleen
+clD,15,LN
+clF,12,LN
+clK,11,LN
+clL,7,LN</textarea>
+
+      <label class="label" for="labelsInput">Optional labels override</label>
+      <textarea id="labelsInput" spellcheck="false" style="min-height: 96px;" placeholder="Used mainly in matrix mode. One label per line or comma-separated."></textarea>
+
+      <div class="grid-2">
+        <div>
+          <label class="label" for="widthInput">Figure width</label>
+          <input id="widthInput" type="number" min="500" max="2400" step="10" value="980">
+        </div>
+        <div>
+          <label class="label" for="heightInput">Figure height</label>
+          <input id="heightInput" type="number" min="500" max="2400" step="10" value="980">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label class="label" for="padInput">Group spacing</label>
+          <input id="padInput" type="number" min="0" max="0.2" step="0.005" value="0.035">
+        </div>
+        <div>
+          <label class="label" for="schemeInput">Palette</label>
+          <select id="schemeInput">
+            <option value="Tableau10">Tableau 10</option>
+            <option value="Set3">Set 3</option>
+            <option value="Dark2">Dark 2</option>
+            <option value="Paired">Paired</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button id="renderBtn" class="primary">Render Plot</button>
+        <button id="sampleBtn" class="secondary">Load Example</button>
+        <button id="svgBtn" class="secondary" disabled>Download SVG</button>
+        <button id="pngBtn" class="secondary" disabled>Download PNG</button>
+      </div>
+
+      <div id="status" class="status">
+        Ready. Paste data and click <strong>Render Plot</strong>.
+      </div>
+
+      <ul class="notes">
+        <li>`Clonotype table` mode imitates the old Circos idea: ideogram-like clone bands plus ribbons only for shared clonotypes.</li>
+        <li>`Sharing matrix` mode keeps the faster D3 chord view for already summarized data.</li>
+        <li>Accepted separators: comma, tab, semicolon, or multiple spaces.</li>
+      </ul>
+    </section>
+
+    <section class="panel viz-panel">
+      <div class="toolbar">
+        <div>
+          <h2>Interactive Plot</h2>
+          <p>Hover groups, clonotype bands, or ribbons to inspect sharing and unique regions.</p>
+        </div>
+        <div class="summary" id="summary"></div>
+      </div>
+      <div class="viz-wrap">
+        <div id="chart"></div>
+        <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script>
+    const sampleMatrix = `Group,Blood,Tumor,Spleen,LN
+Blood,18,7,3,5
+Tumor,6,22,8,9
+Spleen,2,7,15,4
+LN,4,10,5,19`;
+
+    const sampleClonotypes = `clonotype,size,group
+clA,40,Blood
+clB,28,Blood
+clC,22,Blood
+clD,18,Blood
+clE,10,Blood
+clA,36,Tumor
+clC,20,Tumor
+clF,26,Tumor
+clG,14,Tumor
+clH,9,Tumor
+clB,24,Spleen
+clC,16,Spleen
+clI,13,Spleen
+clJ,8,Spleen
+clD,15,LN
+clF,12,LN
+clK,11,LN
+clL,7,LN`;
+
+    const chartRoot = document.getElementById("chart");
+    const tooltip = document.getElementById("tooltip");
+    const summary = document.getElementById("summary");
+    const statusBox = document.getElementById("status");
+    const inputMode = document.getElementById("inputMode");
+    const inputHint = document.getElementById("inputHint");
+    const dataInput = document.getElementById("dataInput");
+    const labelsInput = document.getElementById("labelsInput");
+    const renderBtn = document.getElementById("renderBtn");
+    const sampleBtn = document.getElementById("sampleBtn");
+    const svgBtn = document.getElementById("svgBtn");
+    const pngBtn = document.getElementById("pngBtn");
+
+    let currentSvg = null;
+    let currentFigure = null;
+
+    function setStatus(message, isError = false) {
+      statusBox.innerHTML = message;
+      statusBox.classList.toggle("error", isError);
+    }
+
+    function tokenize(line) {
+      const trimmed = line.trim();
+      if (!trimmed) return [];
+      if (trimmed.includes("\t")) return trimmed.split("\t").map((d) => d.trim());
+      if (trimmed.includes(",")) return trimmed.split(",").map((d) => d.trim());
+      if (trimmed.includes(";")) return trimmed.split(";").map((d) => d.trim());
+      return trimmed.split(/\s{2,}|\s+/).map((d) => d.trim());
+    }
+
+    function parseLabels(raw) {
+      const trimmed = raw.trim();
+      if (!trimmed) return null;
+      return trimmed
+        .split(/\n|,/)
+        .map((d) => d.trim())
+        .filter(Boolean);
+    }
+
+    function isNumericRow(values) {
+      return values.length > 0 && values.every((value) => value !== "" && !Number.isNaN(Number(value)));
+    }
+
+    function parseClonotypeTable(text) {
+      const rows = text
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map(tokenize)
+        .filter((row) => row.length > 0);
+
+      if (!rows.length) {
+        throw new Error("No clonotype table data found.");
+      }
+
+      const normalize = (value) => value.trim().toLowerCase();
+      const header = rows[0].map(normalize);
+      const headerLooksNamed = header.some((value) =>
+        ["id", "clonotype", "cdr3", "clone", "sequence", "group", "sample", "size", "count", "abundance"].includes(value)
+      );
+
+      let startRow = 0;
+      let idIndex = 0;
+      let sizeIndex = 1;
+      let groupIndex = 2;
+
+      if (headerLooksNamed) {
+        startRow = 1;
+        idIndex = header.findIndex((value) => ["id", "clonotype", "cdr3", "clone", "sequence"].includes(value));
+        sizeIndex = header.findIndex((value) => ["size", "count", "abundance", "reads"].includes(value));
+        groupIndex = header.findIndex((value) => ["group", "sample", "condition", "compartment"].includes(value));
+
+        if (idIndex < 0 || groupIndex < 0) {
+          throw new Error("Clonotype table headers must include id/clonotype and group/sample columns.");
+        }
+      } else {
+        const width = rows[0].length;
+        if (width < 2) {
+          throw new Error("Clonotype table mode expects at least id and group columns.");
+        }
+        if (width === 2) {
+          idIndex = 0;
+          sizeIndex = -1;
+          groupIndex = 1;
+        }
+      }
+
+      const records = rows.slice(startRow).map((row, index) => {
+        const id = row[idIndex];
+        const group = row[groupIndex];
+        const rawSize = sizeIndex >= 0 ? row[sizeIndex] : "1";
+        const size = Number(rawSize);
+
+        if (!id || !group) {
+          throw new Error(`Missing id or group on data row ${index + startRow + 1}.`);
+        }
+
+        if (Number.isNaN(size) || size < 0) {
+          throw new Error(`Invalid size value on data row ${index + startRow + 1}.`);
+        }
+
+        return { id, group, size };
+      });
+
+      if (!records.length) {
+        throw new Error("No clonotype rows found after parsing the header.");
+      }
+
+      return records;
+    }
+
+    function parseMatrix(text, labelOverride) {
+      const rows = text
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map(tokenize)
+        .filter((row) => row.length > 0);
+
+      if (!rows.length) {
+        throw new Error("No matrix data found.");
+      }
+
+      let labels = null;
+      let numericRows = rows;
+
+      const firstRow = rows[0];
+      const firstRowLooksNumeric = isNumericRow(firstRow);
+
+      if (!firstRowLooksNumeric) {
+        labels = firstRow.slice(1).filter(Boolean);
+        numericRows = rows.slice(1).map((row) => row.slice(1));
+      } else if (!isNumericRow(rows[0]) && rows.every((row) => !Number.isNaN(Number(row[0])))) {
+        numericRows = rows.map((row) => row.slice(1));
+      }
+
+      const matrix = numericRows.map((row) => row.map((value) => Number(value)));
+
+      if (!matrix.length || matrix.some((row) => row.length !== matrix.length)) {
+        throw new Error("The matrix must be square after parsing labels.");
+      }
+
+      if (matrix.flat().some((value) => Number.isNaN(value) || value < 0)) {
+        throw new Error("All matrix values must be non-negative numbers.");
+      }
+
+      if (labelOverride && labelOverride.length) {
+        if (labelOverride.length !== matrix.length) {
+          throw new Error("The optional label override must match the matrix size.");
+        }
+        labels = labelOverride;
+      }
+
+      if (!labels || labels.length !== matrix.length) {
+        labels = Array.from({ length: matrix.length }, (_, index) => `Group ${index + 1}`);
+      }
+
+      return { labels, matrix };
+    }
+
+    function formatValue(value) {
+      return d3.format(",")(value);
+    }
+
+    function colorArray(name, count) {
+      const schemes = {
+        Tableau10: d3.schemeTableau10,
+        Set3: d3.schemeSet3,
+        Dark2: d3.schemeDark2,
+        Paired: d3.schemePaired
+      };
+      const base = schemes[name] || d3.schemeTableau10;
+      return Array.from({ length: count }, (_, i) => base[i % base.length]);
+    }
+
+    function describeTotals(matrix) {
+      const total = d3.sum(matrix.flat());
+      const sharedPairs = matrix.flat().filter((value) => value > 0).length;
+      const diagonal = d3.sum(matrix.map((row, index) => row[index] || 0));
+      return { total, sharedPairs, diagonal };
+    }
+
+    function zeroDiagonal(matrix) {
+      return matrix.map((row, rowIndex) =>
+        row.map((value, colIndex) => (rowIndex === colIndex ? 0 : value))
+      );
+    }
+
+    function renderSummary(chips) {
+      summary.innerHTML = "";
+      chips.forEach((text) => {
+        const chip = document.createElement("div");
+        chip.className = "chip";
+        chip.textContent = text;
+        summary.appendChild(chip);
+      });
+    }
+
+    function showTooltip(event, html) {
+      tooltip.innerHTML = html;
+      tooltip.style.opacity = "1";
+      const bounds = chartRoot.getBoundingClientRect();
+      const x = event.clientX - bounds.left + 16;
+      const y = event.clientY - bounds.top + 16;
+      tooltip.style.transform = `translate(${x}px, ${y}px)`;
+    }
+
+    function hideTooltip() {
+      tooltip.style.opacity = "0";
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadSvg() {
+      if (!currentSvg) return;
+      const clone = currentSvg.cloneNode(true);
+      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      const blob = new Blob([clone.outerHTML], { type: "image/svg+xml;charset=utf-8" });
+      downloadBlob(blob, "clonality-sharing-chord.svg");
+    }
+
+    function downloadPng() {
+      if (!currentSvg || !currentFigure) return;
+      const clone = currentSvg.cloneNode(true);
+      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      const svgMarkup = clone.outerHTML;
+      const svgBlob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+      const image = new Image();
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = currentFigure.width * 2;
+        canvas.height = currentFigure.height * 2;
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#f7f2eb";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.scale(2, 2);
+        context.drawImage(image, 0, 0, currentFigure.width, currentFigure.height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            downloadBlob(blob, "clonality-sharing-chord.png");
+          }
+          URL.revokeObjectURL(url);
+        });
+      };
+      image.src = url;
+    }
+
+    function buildClonotypeLayout(records, padAngle) {
+      const groupOrder = [];
+      const aggregated = new Map();
+
+      records.forEach((record) => {
+        if (!groupOrder.includes(record.group)) {
+          groupOrder.push(record.group);
+        }
+        const key = `${record.group}|||${record.id}`;
+        const previous = aggregated.get(key) || { id: record.id, group: record.group, size: 0 };
+        previous.size += record.size;
+        aggregated.set(key, previous);
+      });
+
+      const sharedGroups = new Map();
+      Array.from(aggregated.values()).forEach((entry) => {
+        const set = sharedGroups.get(entry.id) || new Set();
+        set.add(entry.group);
+        sharedGroups.set(entry.id, set);
+      });
+
+      const groups = groupOrder.map((name, index) => ({
+        name,
+        index,
+        clones: Array.from(aggregated.values())
+          .filter((entry) => entry.group === name)
+          .sort((a, b) => d3.descending(a.size, b.size) || d3.ascending(a.id, b.id))
+      }));
+
+      groups.forEach((group) => {
+        group.total = d3.sum(group.clones, (clone) => clone.size);
+      });
+
+      const totalSize = d3.sum(groups, (group) => group.total);
+      if (totalSize <= 0) {
+        throw new Error("Clonotype sizes must sum to a positive value.");
+      }
+
+      const availableAngle = (Math.PI * 2) - padAngle * groups.length;
+      let cursor = -Math.PI / 2;
+      const cloneLookup = new Map();
+
+      groups.forEach((group) => {
+        group.startAngle = cursor;
+        group.endAngle = cursor + availableAngle * (group.total / totalSize);
+        const anglePerUnit = group.total ? (group.endAngle - group.startAngle) / group.total : 0;
+        let bandCursor = group.startAngle;
+
+        group.clones.forEach((clone) => {
+          clone.groupIndex = group.index;
+          clone.shared = sharedGroups.get(clone.id).size > 1;
+          clone.startAngle = bandCursor;
+          clone.endAngle = bandCursor + clone.size * anglePerUnit;
+          bandCursor = clone.endAngle;
+          cloneLookup.set(`${clone.group}|||${clone.id}`, clone);
+        });
+
+        cursor = group.endAngle + padAngle;
+      });
+
+      const ribbons = [];
+      sharedGroups.forEach((groupSet, cloneId) => {
+        if (groupSet.size < 2) return;
+        const occurrences = groupOrder
+          .map((group) => cloneLookup.get(`${group}|||${cloneId}`))
+          .filter(Boolean);
+
+        for (let i = 0; i < occurrences.length - 1; i += 1) {
+          for (let j = i + 1; j < occurrences.length; j += 1) {
+            ribbons.push({
+              id: cloneId,
+              sourceClone: occurrences[i],
+              targetClone: occurrences[j],
+              source: {
+                startAngle: occurrences[i].startAngle,
+                endAngle: occurrences[i].endAngle,
+                radius: 1
+              },
+              target: {
+                startAngle: occurrences[j].startAngle,
+                endAngle: occurrences[j].endAngle,
+                radius: 1
+              }
+            });
+          }
+        }
+      });
+
+      const matrix = groups.map(() => groups.map(() => 0));
+      ribbons.forEach((ribbon) => {
+        matrix[ribbon.sourceClone.groupIndex][ribbon.targetClone.groupIndex] += Math.min(
+          ribbon.sourceClone.size,
+          ribbon.targetClone.size
+        );
+        matrix[ribbon.targetClone.groupIndex][ribbon.sourceClone.groupIndex] += Math.min(
+          ribbon.sourceClone.size,
+          ribbon.targetClone.size
+        );
+      });
+
+      return {
+        groups,
+        ribbons,
+        matrix,
+        uniqueCount: Array.from(aggregated.values()).filter((clone) => sharedGroups.get(clone.id).size === 1).length,
+        sharedCloneCount: Array.from(sharedGroups.values()).filter((set) => set.size > 1).length,
+        totalClones: aggregated.size
+      };
+    }
+
+    function renderMatrixChart(labels, matrix) {
+      const width = Math.max(500, Number(document.getElementById("widthInput").value) || 980);
+      const height = Math.max(500, Number(document.getElementById("heightInput").value) || 980);
+      const padAngle = Math.max(0, Number(document.getElementById("padInput").value) || 0.035);
+      const palette = document.getElementById("schemeInput").value;
+      const radius = Math.min(width, height) * 0.38;
+      const innerRadius = radius - 28;
+      const outerRadius = radius + 18;
+
+      chartRoot.innerHTML = "";
+
+      const displayMatrix = zeroDiagonal(matrix);
+      const colors = colorArray(palette, labels.length);
+      const chordLayout = d3
+        .chord()
+        .padAngle(padAngle)
+        .sortSubgroups(d3.descending)
+        .sortChords(d3.descending);
+
+      const chords = chordLayout(displayMatrix);
+      const color = d3.scaleOrdinal(d3.range(labels.length), colors);
+
+      const svg = d3
+        .select(chartRoot)
+        .append("svg")
+        .attr("viewBox", [-width / 2, -height / 2, width, height])
+        .attr("aria-label", "Chord diagram of clonality sharing between groups");
+
+      svg
+        .append("text")
+        .attr("x", -width / 2 + 28)
+        .attr("y", -height / 2 + 36)
+        .attr("fill", "#1f2a2c")
+        .attr("font-size", 30)
+        .attr("font-weight", 800)
+        .text("BCR/TCR Clonality Sharing");
+
+      svg
+        .append("text")
+        .attr("x", -width / 2 + 28)
+        .attr("y", -height / 2 + 62)
+        .attr("fill", "#59666a")
+        .attr("font-size", 14)
+        .text("Source and target widths reflect pairwise overlap in the pasted matrix.");
+
+      const chart = svg.append("g").attr("transform", "translate(0, 34)");
+
+      const group = chart
+        .append("g")
+        .selectAll("g")
+        .data(chords.groups)
+        .join("g")
+        .attr("class", "group");
+
+      const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
+      const ribbon = d3.ribbon().radius(innerRadius);
+
+      group
+        .append("path")
+        .attr("fill", (d) => color(d.index))
+        .attr("stroke", (d) => d3.color(color(d.index)).darker(0.6))
+        .attr("d", arc)
+        .on("mousemove", function(event, d) {
+          const outgoing = matrix[d.index].reduce((sum, value) => sum + value, 0);
+          const incoming = matrix.reduce((sum, row) => sum + row[d.index], 0);
+          showTooltip(
+            event,
+            `<strong>${labels[d.index]}</strong><br>Outgoing: ${formatValue(outgoing)}<br>Incoming: ${formatValue(incoming)}`
+          );
+          chart.selectAll(".ribbon").attr("opacity", (item) =>
+            item.source.index === d.index || item.target.index === d.index ? 0.92 : 0.08
+          );
+          group.selectAll("path").attr("opacity", (item) => (item.index === d.index ? 1 : 0.28));
+        })
+        .on("mouseleave", () => {
+          hideTooltip();
+          chart.selectAll(".ribbon").attr("opacity", 0.78);
+          group.selectAll("path").attr("opacity", 1);
+        });
+
+      group
+        .append("text")
+        .each((d) => {
+          d.angle = (d.startAngle + d.endAngle) / 2;
+        })
+        .attr("dy", "0.35em")
+        .attr("font-size", 13)
+        .attr("font-weight", 700)
+        .attr("fill", "#243234")
+        .attr("transform", (d) => `
+          rotate(${(d.angle * 180) / Math.PI - 90})
+          translate(${outerRadius + 14})
+          ${d.angle > Math.PI ? "rotate(180)" : ""}
+        `)
+        .attr("text-anchor", (d) => (d.angle > Math.PI ? "end" : "start"))
+        .text((d) => labels[d.index]);
+
+      chart
+        .append("g")
+        .attr("fill-opacity", 0.78)
+        .selectAll("path")
+        .data(chords)
+        .join("path")
+        .attr("class", "ribbon")
+        .attr("d", ribbon)
+        .attr("fill", (d) => {
+          const sourceValue = matrix[d.source.index][d.target.index];
+          const targetValue = matrix[d.target.index][d.source.index];
+          return color(sourceValue >= targetValue ? d.source.index : d.target.index);
+        })
+        .attr("stroke", (d) => d3.color(color(d.source.index)).darker(0.7))
+        .on("mousemove", function(event, d) {
+          showTooltip(
+            event,
+            `<strong>${labels[d.source.index]} → ${labels[d.target.index]}</strong><br>${formatValue(matrix[d.source.index][d.target.index])}<br><strong>${labels[d.target.index]} → ${labels[d.source.index]}</strong><br>${formatValue(matrix[d.target.index][d.source.index])}`
+          );
+          chart.selectAll(".ribbon").attr("opacity", (item) => (item === d ? 0.96 : 0.12));
+          group.selectAll("path").attr("opacity", (item) =>
+            item.index === d.source.index || item.index === d.target.index ? 1 : 0.24
+          );
+        })
+        .on("mouseleave", () => {
+          hideTooltip();
+          chart.selectAll(".ribbon").attr("opacity", 0.78);
+          group.selectAll("path").attr("opacity", 1);
+        });
+
+      currentSvg = chartRoot.querySelector("svg");
+      currentFigure = { width, height };
+      svgBtn.disabled = false;
+      pngBtn.disabled = false;
+      const stats = describeTotals(displayMatrix);
+      renderSummary([
+        `${labels.length} groups`,
+        `${formatValue(stats.total)} total shared clonotypes`,
+        `self links suppressed`,
+        `${formatValue(stats.sharedPairs)} non-zero cells`
+      ]);
+    }
+
+    function renderClonotypeChart(records) {
+      const width = Math.max(500, Number(document.getElementById("widthInput").value) || 980);
+      const height = Math.max(500, Number(document.getElementById("heightInput").value) || 980);
+      const padAngle = Math.max(0, Number(document.getElementById("padInput").value) || 0.035);
+      const palette = document.getElementById("schemeInput").value;
+      const outerRadius = Math.min(width, height) * 0.39;
+      const bandOuterRadius = outerRadius;
+      const bandInnerRadius = bandOuterRadius - 26;
+      const ribbonRadius = bandInnerRadius - 10;
+
+      chartRoot.innerHTML = "";
+
+      const layout = buildClonotypeLayout(records, padAngle);
+      const colors = colorArray(palette, layout.groups.length);
+      const color = d3.scaleOrdinal(d3.range(layout.groups.length), colors);
+
+      const svg = d3
+        .select(chartRoot)
+        .append("svg")
+        .attr("viewBox", [-width / 2, -height / 2, width, height])
+        .attr("aria-label", "Circos-like plot of clonality sharing between groups");
+
+      svg
+        .append("text")
+        .attr("x", -width / 2 + 28)
+        .attr("y", -height / 2 + 36)
+        .attr("fill", "#1f2a2c")
+        .attr("font-size", 30)
+        .attr("font-weight", 800)
+        .text("BCR/TCR Clonality Sharing");
+
+      svg
+        .append("text")
+        .attr("x", -width / 2 + 28)
+        .attr("y", -height / 2 + 62)
+        .attr("fill", "#59666a")
+        .attr("font-size", 14)
+        .text("The ideogram itself is split into clonotype bands; unique clones remain visible with no ribbons.");
+
+      const chart = svg.append("g").attr("transform", "translate(0, 34)");
+      const bandArc = d3.arc().innerRadius(bandInnerRadius).outerRadius(bandOuterRadius);
+      const ribbon = d3.ribbon().radius(ribbonRadius);
+
+      const group = chart
+        .append("g")
+        .selectAll("g")
+        .data(layout.groups)
+        .join("g")
+        .attr("class", "group");
+
+      group
+        .append("path")
+        .attr("fill", "transparent")
+        .attr("stroke", (d) => d3.color(color(d.index)).darker(0.45))
+        .attr("stroke-width", 2.2)
+        .attr("d", (d) =>
+          d3.arc()
+            .innerRadius(bandOuterRadius + 3)
+            .outerRadius(bandOuterRadius + 3)
+            .startAngle(d.startAngle)
+            .endAngle(d.endAngle)()
+        )
+        .on("mousemove", function(event, d) {
+          const shared = d.clones.filter((clone) => clone.shared).length;
+          const unique = d.clones.length - shared;
+          showTooltip(
+            event,
+            `<strong>${d.name}</strong><br>Total size: ${formatValue(d.total)}<br>Clonotypes: ${formatValue(d.clones.length)}<br>Shared: ${formatValue(shared)}<br>Unique: ${formatValue(unique)}`
+          );
+          chart.selectAll(".clone-band").attr("opacity", (item) => (item.groupIndex === d.index ? 1 : 0.2));
+          chart.selectAll(".ribbon").attr("opacity", (item) =>
+            item.sourceClone.groupIndex === d.index || item.targetClone.groupIndex === d.index ? 0.86 : 0.06
+          );
+        })
+        .on("mouseleave", () => {
+          hideTooltip();
+          chart.selectAll(".clone-band").attr("opacity", 1);
+          chart.selectAll(".ribbon").attr("opacity", 0.72);
+        });
+
+      group
+        .append("path")
+        .attr("fill", "transparent")
+        .attr("stroke", "transparent")
+        .attr("stroke-width", 14)
+        .attr("d", (d) =>
+          d3.arc()
+            .innerRadius((bandInnerRadius + bandOuterRadius) / 2)
+            .outerRadius((bandInnerRadius + bandOuterRadius) / 2)
+            .startAngle(d.startAngle)
+            .endAngle(d.endAngle)()
+        )
+        .on("mousemove", function(event, d) {
+          const shared = d.clones.filter((clone) => clone.shared).length;
+          const unique = d.clones.length - shared;
+          showTooltip(
+            event,
+            `<strong>${d.name}</strong><br>Total size: ${formatValue(d.total)}<br>Clonotypes: ${formatValue(d.clones.length)}<br>Shared: ${formatValue(shared)}<br>Unique: ${formatValue(unique)}`
+          );
+          chart.selectAll(".clone-band").attr("opacity", (item) => (item.groupIndex === d.index ? 1 : 0.2));
+          chart.selectAll(".ribbon").attr("opacity", (item) =>
+            item.sourceClone.groupIndex === d.index || item.targetClone.groupIndex === d.index ? 0.86 : 0.06
+          );
+        })
+        .on("mouseleave", () => {
+          hideTooltip();
+          chart.selectAll(".clone-band").attr("opacity", 1);
+          chart.selectAll(".ribbon").attr("opacity", 0.72);
+        });
+
+      group
+        .append("text")
+        .each((d) => {
+          d.angle = (d.startAngle + d.endAngle) / 2;
+        })
+        .attr("dy", "0.35em")
+        .attr("font-size", 13)
+        .attr("font-weight", 700)
+        .attr("fill", "#243234")
+        .attr("transform", (d) => `
+          rotate(${(d.angle * 180) / Math.PI - 90})
+          translate(${outerRadius + 14})
+          ${d.angle > Math.PI ? "rotate(180)" : ""}
+        `)
+        .attr("text-anchor", (d) => (d.angle > Math.PI ? "end" : "start"))
+        .text((d) => d.name);
+
+      chart
+        .append("g")
+        .selectAll("path")
+        .data(layout.groups.flatMap((groupItem) => groupItem.clones))
+        .join("path")
+        .attr("class", "clone-band")
+        .attr("fill", (d) => color(d.groupIndex))
+        .attr("fill-opacity", (d) => (d.shared ? 0.92 : 0.28))
+        .attr("stroke", (d) => d3.color(color(d.groupIndex)).darker(0.55))
+        .attr("stroke-width", 0.8)
+        .attr("d", bandArc)
+        .on("mousemove", function(event, d) {
+          showTooltip(
+            event,
+            `<strong>${d.id}</strong><br>Group: ${d.group}<br>Size: ${formatValue(d.size)}<br>${d.shared ? "Shared clonotype" : "Unique clonotype"}`
+          );
+          chart.selectAll(".clone-band").attr("opacity", (item) => (item.id === d.id ? 1 : 0.18));
+          chart.selectAll(".ribbon").attr("opacity", (item) => (item.id === d.id ? 0.92 : 0.05));
+        })
+        .on("mouseleave", () => {
+          hideTooltip();
+          chart.selectAll(".clone-band").attr("opacity", 1);
+          chart.selectAll(".ribbon").attr("opacity", 0.72);
+        });
+
+      chart
+        .append("g")
+        .attr("fill-opacity", 0.72)
+        .selectAll("path")
+        .data(layout.ribbons)
+        .join("path")
+        .attr("class", "ribbon")
+        .attr("d", (d) =>
+          ribbon({
+            source: { ...d.source, radius: ribbonRadius },
+            target: { ...d.target, radius: ribbonRadius }
+          })
+        )
+        .attr("fill", (d) => color(d.sourceClone.groupIndex))
+        .attr("stroke", (d) => d3.color(color(d.sourceClone.groupIndex)).darker(0.7))
+        .on("mousemove", function(event, d) {
+          showTooltip(
+            event,
+            `<strong>${d.id}</strong><br>${d.sourceClone.group}: ${formatValue(d.sourceClone.size)}<br>${d.targetClone.group}: ${formatValue(d.targetClone.size)}`
+          );
+          chart.selectAll(".ribbon").attr("opacity", (item) => (item === d ? 0.96 : 0.08));
+          chart.selectAll(".clone-band").attr("opacity", (item) => (item.id === d.id ? 1 : 0.18));
+        })
+        .on("mouseleave", () => {
+          hideTooltip();
+          chart.selectAll(".clone-band").attr("opacity", 1);
+          chart.selectAll(".ribbon").attr("opacity", 0.72);
+        });
+
+      currentSvg = chartRoot.querySelector("svg");
+      currentFigure = { width, height };
+      svgBtn.disabled = false;
+      pngBtn.disabled = false;
+
+      const derivedStats = describeTotals(layout.matrix);
+      renderSummary([
+        `${layout.groups.length} groups`,
+        `${formatValue(layout.totalClones)} clonotype bands`,
+        `${formatValue(layout.sharedCloneCount)} shared clonotypes`,
+        `${formatValue(layout.uniqueCount)} unique clonotypes`,
+        `${formatValue(layout.ribbons.length)} ribbons`,
+        `${formatValue(derivedStats.total)} derived pairwise weight`
+      ]);
+    }
+
+    function runRender() {
+      try {
+        if (inputMode.value === "matrix") {
+          const parsed = parseMatrix(dataInput.value, parseLabels(labelsInput.value));
+          renderMatrixChart(parsed.labels, parsed.matrix);
+          setStatus(
+            `Rendered matrix mode with <strong>${parsed.labels.length}</strong> groups and <strong>${formatValue(d3.sum(parsed.matrix.flat()))}</strong> total shared clonotypes.`
+          );
+        } else {
+          const records = parseClonotypeTable(dataInput.value);
+          renderClonotypeChart(records);
+          setStatus(
+            `Rendered clonotype mode from <strong>${formatValue(records.length)}</strong> rows. Unique clones stay visible as ideogram bands without ribbons.`
+          );
+        }
+      } catch (error) {
+        summary.innerHTML = "";
+        chartRoot.innerHTML = "";
+        currentSvg = null;
+        currentFigure = null;
+        svgBtn.disabled = true;
+        pngBtn.disabled = true;
+        setStatus(error.message, true);
+      }
+    }
+
+    function syncModeUi() {
+      if (inputMode.value === "matrix") {
+        inputHint.textContent = "Paste a labeled or unlabeled square matrix. Diagonal values can represent within-group counts.";
+        dataInput.value = sampleMatrix;
+      } else {
+        inputHint.textContent = "Paste id,size,group style data. The plot will sort clonotypes from larger to smaller and leave unique clonotypes visible with no ribbons.";
+        dataInput.value = sampleClonotypes;
+      }
+      labelsInput.value = "";
+    }
+
+    renderBtn.addEventListener("click", runRender);
+    sampleBtn.addEventListener("click", () => {
+      dataInput.value = inputMode.value === "matrix" ? sampleMatrix : sampleClonotypes;
+      labelsInput.value = "";
+      runRender();
+    });
+    inputMode.addEventListener("change", () => {
+      syncModeUi();
+      runRender();
+    });
+    svgBtn.addEventListener("click", downloadSvg);
+    pngBtn.addEventListener("click", downloadPng);
+
+    syncModeUi();
+    runRender();
+  </script>
+</body>
+</html>

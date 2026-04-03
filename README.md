@@ -9,6 +9,7 @@ The package currently helps with four broad tasks:
 - clonotype assignment from 10x Genomics V(D)J contig annotations
 - plate-level contig inspection and QC
 - downstream integration with Seurat and immunarch-friendly formats
+- interactive Circos-style clone sharing visualization in a browser
 
 ## Installation
 
@@ -163,6 +164,52 @@ imm <- gen_immunarch(
   sample_column = "Conditions"
 )
 ```
+
+### 5. Interactive Circos viewer
+
+The package also bundles a lightweight D3 viewer for clone sharing across
+conditions or tissues.
+
+Open the viewer with:
+
+```r
+clonality::open_circos_viewer()
+```
+
+If your data are already in a wide clone-by-group table:
+
+```r
+wide_df <- data.frame(
+  Clone_ID = c("1.1", "2.1", "6.1"),
+  M1LP_PC = c(2, 3, 3),
+  M1PP_GC = c(11, 0, 0),
+  M2LP_PC = c(0, 0, 1)
+)
+
+viewer_df <- clonality::circos_viewer_wide_to_long(
+  wide_df,
+  clone_col = "Clone_ID"
+)
+```
+
+If your table already has one row per cell or per contig plus a grouping
+column:
+
+```r
+results$condition <- sample(
+  c("M1LP_PC", "M1PP_GC", "M2LP_PC"),
+  nrow(results),
+  replace = TRUE
+)
+
+viewer_df <- clonality::circos_viewer_input(
+  data = results,
+  clonotype_col = "clonality",
+  group_col = "condition"
+)
+```
+
+Then paste `viewer_df` into the viewer using `Clonotype table` mode.
 
 ## Function Map
 
