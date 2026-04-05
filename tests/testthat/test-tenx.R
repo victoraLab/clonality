@@ -126,3 +126,28 @@ test_that("Tgd special handling removes chain=='None' and CDR3 with '*'", {
     expect_equal(length(res[["TRD"]]), 1L)  # barcode C
   })
 })
+
+test_that("tenx normalizes common AIRR-style compiled column names", {
+  df <- data.frame(
+    cell_id = c("A", "A", "B", "B"),
+    locus = c("IGH", "IGK", "IGH", "IGK"),
+    junction = c("ATG", "TAA", "CCC", "GGG"),
+    junction_aa = c("CAR", "CTR", "CQQ", "CGG"),
+    v_call_genotyped = c("IGHV1", "IGKV1", "IGHV3", "IGKV3"),
+    j_call = c("IGHJ1", "IGKJ1", "IGHJ3", "IGKJ3"),
+    c_call = c("IGHM", "IGKC", "IGHG", "IGKC"),
+    clone_id = c("cl1", "cl1", "cl2", "cl2"),
+    productive = c(TRUE, TRUE, TRUE, TRUE),
+    is_cell = c(TRUE, TRUE, TRUE, TRUE),
+    stringsAsFactors = FALSE
+  )
+
+  with_mocked_bindings(
+    assigntenx = function(list.pairs, ...) list.pairs,
+    .env = environment(tenx)
+    , {
+      res <- tenx(df, ignore_version = TRUE)
+      expect_true("IGH_IGK" %in% names(res))
+      expect_equal(length(res[["IGH_IGK"]]), 2L)
+    })
+})

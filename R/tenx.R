@@ -53,8 +53,29 @@ tenx <- function(data = NULL,
                                     cellranger_version = cellranger_version,
                                     ignore_version = ignore_version)
 
+  data <- normalize_tenx_columns(data)
+
+  required_cols <- c("barcode", "chain", "cdr3_nt", "v_gene", "j_gene")
+  missing_cols <- setdiff(required_cols, names(data))
+  if (length(missing_cols) > 0) {
+    stop(
+      "Input is missing required 10x/AIRR columns after normalization: ",
+      paste(missing_cols, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
   # Remove empty or NA CDR3s
   data <- data[data$cdr3_nt != "" & !is.na(data$cdr3_nt), ]
+
+  if (!nrow(data)) {
+    stop(
+      "No rows remain after preprocessing. Check that your input includes non-missing CDR3 nucleotide data ",
+      "(`cdr3_nt` or an alias such as `junction`) and that any requested filters are not removing all rows.",
+      call. = FALSE
+    )
+  }
 
   # Apply shared chain filters (productive / true cells) for all cell types
   if (only_productive) {
@@ -81,14 +102,18 @@ tenx <- function(data = NULL,
   data.list <- lapply(data.list, sort.list)
 
   # Extract chain classes per barcode
-  pairs <- data.frame(Chains = unlist(lapply(data.list, group.chains)))
+  pairs <- data.frame(
+    Chains = as.character(unlist(lapply(data.list, group.chains))),
+    stringsAsFactors = FALSE
+  )
 
   #Define empty variable
   list.pairs <- list()
 
   # Group chains from the same chain class together
   for (i in unique(pairs$Chains)) {
-    list.pairs[[i]] <- data.list[pairs$Chains == i]
+    class_name <- as.character(i)
+    list.pairs[[class_name]] <- data.list[pairs$Chains == class_name]
   }
 
   # Run clonality assignment per chain class
@@ -105,4 +130,40 @@ tenx <- function(data = NULL,
   obj_names <- paste0("Clonal.output.10x", names(out_list))
   list2env(stats::setNames(out_list, obj_names), envir = .GlobalEnv)
   return(out_list)
+}
+
+normalize_tenx_columns <- function(data) {
+  aliases <- list(
+    barcode = c("barcode", "barcodes", "cell_id", "cell", "cellid"),
+    chain = c("chain", "locus"),
+    cdr3_nt = c("cdr3_nt", "junction"),
+    cdr3 = c("cdr3", "cdr3_aa", "junction_aa"),
+    v_gene = c("v_gene", "v_call", "v_call_genotyped"),
+    j_gene = c("j_gene", "j_call"),
+    c_gene = c("c_gene", "c_call", "c_call_genotyped"),
+    raw_clonotype_id = c("raw_clonotype_id", "clone_id", "clonotype_id"),
+    productive = c("productive"),
+    is_cell = c("is_cell")
+  )
+
+  for (target in names(aliases)) {
+    if (target %in% names(data)) {
+      next
+    }
+
+    match <- aliases[[target]][aliases[[target]] %in% names(data)]
+    if (length(match)) {
+      data[[target]] <- data[[match[[1]]]]
+    }
+  }
+
+  if (!"cdr3" %in% names(data) && "cdr3_nt" %in% names(data)) {
+    data$cdr3 <- data$cdr3_nt
+  }
+
+  if (!"raw_clonotype_id" %in% names(data)) {
+    data$raw_clonotype_id <- NA_character_
+  }
+
+  data
 }
