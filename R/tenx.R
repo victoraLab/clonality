@@ -55,6 +55,14 @@ tenx <- function(data = NULL,
 
   data <- normalize_tenx_columns(data)
 
+  if (!"cdr3_nt" %in% names(data) && "cdr3" %in% names(data)) {
+    data$cdr3_nt <- data$cdr3
+    warning(
+      "Input does not contain `cdr3_nt`; falling back to amino-acid CDR3 values for clonotype assignment.",
+      call. = FALSE
+    )
+  }
+
   required_cols <- c("barcode", "chain", "cdr3_nt", "v_gene", "j_gene")
   missing_cols <- setdiff(required_cols, names(data))
   if (length(missing_cols) > 0) {
