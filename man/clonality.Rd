@@ -19,6 +19,7 @@ clonality(
   filter_IMGT_sequences = FALSE,
   stringdist_method = "osa",
   project = "project",
+  cdr3_tags = NULL,
   ...
 )
 }
@@ -31,22 +32,25 @@ clonality(
 
 \item{jgene_col}{\code{Character}. The name of the column containing J gene annotations. Default: "JGENE_and_allele".}
 
-\item{cdr3_col}{\code{Character}. The name of the column containing CDR3 sequences. Default: "JUNCTION".}
+\item{cdr3_col}{\code{Character} vector. One or more column names containing CDR3 sequences.
+When multiple columns are provided, clustering is performed independently for each,
+producing separate \code{clonality_<tag>} columns. Default: "JUNCTION".}
 
 \item{cell}{\code{Character}. One of "T" or "B". Specifies T cell or B cell data. Default: "T".}
 
 \item{output_original}{\code{Logical}. If \code{TRUE}, joins results to the original input. Default: \code{FALSE}.}
 
-\item{mismatch}{\code{Numeric}. Percent mismatch tolerance used to subcluster sequences within the same V/J/CDR3-length bin (range: 0–100).
+\item{mismatch}{\code{Numeric} vector. Percent mismatch tolerance used to subcluster sequences within the same V/J/CDR3-length bin (range: 0--100).
 Internally, pairwise CDR3 string distances are normalized by CDR3 length and the hierarchical tree
 is cut at \code{hclust_height = mismatch / 100}.
 \itemize{
 \item A value of \code{0} means \strong{no mismatch is allowed}: only identical CDR3 sequences cluster together.
 \item A value of \code{10} allows clustering of sequences that differ by up to about 10\% of CDR3 length.
 \item A value of \code{100} is the loosest setting and effectively prevents subclustering within a duplicated V/J/length bin.
+When \code{cdr3_col} has length > 1, \code{mismatch} is recycled to match.
 }}
 
-\item{suffix}{\code{Character}. A string to append to the clonality group IDs.}
+\item{suffix}{\code{Character} vector. A string to append to the clonality group IDs. Recycled to match \code{cdr3_col}.}
 
 \item{file}{\code{Character}. Saves output as an excel file.}
 
@@ -54,22 +58,33 @@ is cut at \code{hclust_height = mismatch / 100}.
 
 \item{filter_IMGT_sequences}{\code{Logical}. Whether to filter for productive IMGT CDR3 sequences. Default: \code{FALSE}.}
 
-\item{stringdist_method}{String distance method passed to \code{stringdist()}.
+\item{stringdist_method}{String distance method passed to \code{stringdist()}. Recycled to match \code{cdr3_col}.
 Defaults to "osa" (Optimal String Alignment). Other options include:
 "lv", "dl", "hamming", "lcs", "qgram", "cosine", "jaccard",
 "jw" (Jaro-Winkler), and "soundex". See \code{?stringdist::stringdist} for details.}
 
 \item{project}{\code{Character}. Optional label to assign to all rows in the resulting data frame to identify the project or dataset. If not provided, defaults to "project".}
 
+\item{cdr3_tags}{\code{Character} vector. Optional override for the CDR3 column tags used
+in output column names (e.g. \code{c("nt","aa")}). If \code{NULL} (default), tags are
+auto-detected as \code{"nt"} or \code{"aa"} based on sequence content.}
+
 \item{...}{Additional arguments passed to \code{read_repertoire()}.}
 }
 \value{
-A data frame with a \code{clonality} column added, or written to disk if input is a file.
+A data frame with one or more \verb{clonality_*} columns added, or written to disk if \code{file} is specified.
 }
 \description{
 Identifies clonal groups based on V gene, J gene, and CDR3 sequence similarity.
 Sequences with identical V-J-CDR3 length combinations are clustered using hierarchical clustering.
 Can return a full joined data frame or a simplified annotated output.
+}
+\details{
+When \code{cdr3_col} is a vector of length > 1, the function runs one independent
+clustering pass per CDR3 column, each with its own \code{mismatch} and
+\code{stringdist_method} (recycled to match).
+The output contains one \code{clonality_<tag>} column per CDR3 column
+(e.g. \code{clonality_nt}, \code{clonality_aa}).
 }
 \examples{
 results <- clonality(data = tra, vgene_col = "V_GENE_and_allele", jgene_col = "J_GENE_and_allele")

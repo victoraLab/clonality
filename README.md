@@ -62,6 +62,7 @@ tra_out <- clonality(
 Key parameters:
 
 - `mismatch` controls the percent mismatch tolerance (range: 0--100). Internally CDR3 pairwise distances are normalized by length and the clustering tree is cut at `mismatch / 100`. For example, `mismatch = 10` allows up to ~10 % CDR3 divergence within a V-J-CDR3-length bin, while `mismatch = 0` requires identical CDR3 sequences.
+- `cdr3_col` accepts one or more CDR3 column names. When multiple columns are provided (e.g. nucleotide and amino-acid), clustering runs independently for each, producing separate `clonality_nt` / `clonality_aa` columns. `mismatch` and `stringdist_method` are recycled to match.
 - `file` optionally writes the result to an `.xlsx` file.
 - `output_original = TRUE` joins the clonality assignments back to the full input table.
 
@@ -325,33 +326,31 @@ tenx_out <- tenx(
 )
 ```
 
-### Comparing multiple mismatch thresholds
+### Multi-CDR3 clustering in a single call
 
-To evaluate how different mismatch tolerances affect clonotype grouping,
-run `clonality()` at several thresholds and compare the resulting clone
-counts. This is useful for choosing the right stringency for your dataset.
+When your data frame contains both nucleotide and amino-acid CDR3 columns,
+you can cluster on each independently with a single `clonality()` call.
+Each CDR3 column gets its own `mismatch` threshold, and the output contains
+one `clonality_<tag>` column per CDR3 (e.g. `clonality_nt`, `clonality_aa`).
 
 ```r
-mismatches <- c(0, 5, 10, 15)
+result <- clonality(
+  data      = formattedData,
+  ident_col = "SequenceID",
+  vgene_col = "V_gene",
+  jgene_col = "J_gene",
+  cell      = "B",
+  cdr3_col  = c("Junction_nt", "Junction_aa"),
+  mismatch  = c(0, 10),               # 0 % for nt, 10 % for aa
+  output_original = TRUE
+)
 
-results <- lapply(mismatches, function(m) {
-  clonality(
-    data       = formattedData,
-    ident_col  = "SequenceID",
-    vgene_col  = "V_gene",
-    jgene_col  = "J_gene",
-    cdr3_col   = "Junction",
-    cell       = "B",
-    mismatch   = m,
-    output_original = TRUE
-  )
-})
-
-names(results) <- paste0("mismatch_", mismatches)
-
-# Quick comparison: how many unique clonotypes at each threshold?
-sapply(results, function(df) length(unique(df$clonality)))
+# Result contains both clonality_nt and clonality_aa columns
+head(result[, c("clonality_nt", "clonality_aa")])
 ```
+
+`stringdist_method` and `suffix` are also recycled to match `cdr3_col`,
+so you can use different distance methods per CDR3 column if needed.
 
 ### Multi-project IMGT processing
 
