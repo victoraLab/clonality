@@ -326,7 +326,23 @@ tenx_out <- tenx(
 )
 ```
 
-### Multi-CDR3 clustering in a single call
+### Custom data -- single CDR3 column
+
+```r
+result <- clonality(
+  data            = formattedData,
+  ident_col       = "SequenceID",
+  vgene_col       = "V_gene",
+  jgene_col       = "J_gene",
+  cell            = "B",
+  cdr3_col        = "Junction",
+  mismatch        = 10,
+  output_original = TRUE,
+  file            = "clonality_10.xlsx"
+)
+```
+
+### Custom data -- multiple CDR3 columns (multi-mismatch)
 
 When your data frame contains both nucleotide and amino-acid CDR3 columns,
 you can cluster on each independently with a single `clonality()` call.
@@ -335,14 +351,15 @@ one `clonality_<tag>` column per CDR3 (e.g. `clonality_nt`, `clonality_aa`).
 
 ```r
 result <- clonality(
-  data      = formattedData,
-  ident_col = "SequenceID",
-  vgene_col = "V_gene",
-  jgene_col = "J_gene",
-  cell      = "B",
-  cdr3_col  = c("Junction_nt", "Junction_aa"),
-  mismatch  = c(0, 10),               # 0 % for nt, 10 % for aa
-  output_original = TRUE
+  data            = formattedData,
+  ident_col       = "SequenceID",
+  vgene_col       = "V_gene",
+  jgene_col       = "J_gene",
+  cell            = "B",
+  cdr3_col        = c("Junction_nt", "Junction_aa"),
+  mismatch        = c(0, 10),          # 0 % for nt, 10 % for aa
+  output_original = TRUE,
+  file            = "clonality_multi.xlsx"
 )
 
 # Result contains both clonality_nt and clonality_aa columns
