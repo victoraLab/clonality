@@ -62,6 +62,13 @@ clonality <- function(data = "example.xlsx",
 
   hclust_height <- mismatch / 100
 
+  # Validate cdr3_col: must be a single column name
+
+  if (length(cdr3_col) > 1) {
+    message("clonality: 'cdr3_col' has length > 1; using only the first element: '", cdr3_col[1], "'")
+    cdr3_col <- cdr3_col[1]
+  }
+
   # Read the input data (data frame or .xlsx file)
   # If data is not a file path, assume it's a data frame from the R environment
   imported_df <- read_repertoire(data, ...)

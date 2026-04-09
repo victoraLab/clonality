@@ -46,11 +46,24 @@ head(tra)
 
 tra_out <- clonality(
   data = tra,
-  output = "tra.output",
   vgene_col = "V_GENE_and_allele",
   jgene_col = "J_GENE_and_allele"
 )
+
+# Optionally save to an Excel file
+tra_out <- clonality(
+  data = tra,
+  vgene_col = "V_GENE_and_allele",
+  jgene_col = "J_GENE_and_allele",
+  file = "tra_output.xlsx"
+)
 ```
+
+Key parameters:
+
+- `mismatch` controls the percent mismatch tolerance (range: 0--100). Internally CDR3 pairwise distances are normalized by length and the clustering tree is cut at `mismatch / 100`. For example, `mismatch = 10` allows up to ~10 % CDR3 divergence within a V-J-CDR3-length bin, while `mismatch = 0` requires identical CDR3 sequences.
+- `file` optionally writes the result to an `.xlsx` file.
+- `output_original = TRUE` joins the clonality assignments back to the full input table.
 
 Typical inputs for this workflow are:
 
@@ -310,6 +323,34 @@ tenx_out <- tenx(
   only_productive = TRUE,
   cellranger_version = 3
 )
+```
+
+### Comparing multiple mismatch thresholds
+
+To evaluate how different mismatch tolerances affect clonotype grouping,
+run `clonality()` at several thresholds and compare the resulting clone
+counts. This is useful for choosing the right stringency for your dataset.
+
+```r
+mismatches <- c(0, 5, 10, 15)
+
+results <- lapply(mismatches, function(m) {
+  clonality(
+    data       = formattedData,
+    ident_col  = "SequenceID",
+    vgene_col  = "V_gene",
+    jgene_col  = "J_gene",
+    cdr3_col   = "Junction",
+    cell       = "B",
+    mismatch   = m,
+    output_original = TRUE
+  )
+})
+
+names(results) <- paste0("mismatch_", mismatches)
+
+# Quick comparison: how many unique clonotypes at each threshold?
+sapply(results, function(df) length(unique(df$clonality)))
 ```
 
 ### Multi-project IMGT processing
