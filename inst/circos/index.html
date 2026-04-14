@@ -829,14 +829,22 @@ clL,7,LN`;
       };
     }
 
+    /* ── Tick helper (matches Observable d3 chord reference) ────────── */
+    function groupTicks(d, step) {
+      const k = (d.endAngle - d.startAngle) / d.value;
+      return d3.range(0, d.value, step).map(value => ({
+        value,
+        angle: value * k + d.startAngle
+      }));
+    }
+
     function renderMatrixChart(labels, matrix) {
       const width = Math.max(500, Number(document.getElementById("widthInput").value) || 980);
       const height = Math.max(500, Number(document.getElementById("heightInput").value) || 980);
       const padAngle = Math.max(0, Number(document.getElementById("padInput").value) || 0.035);
       const palette = document.getElementById("schemeInput").value;
-      const radius = Math.min(width, height) * 0.38;
-      const innerRadius = radius - 28;
-      const outerRadius = radius + 18;
+      const outerRadius = Math.min(width, height) * 0.5 - 60;
+      const innerRadius = outerRadius - 20;
 
       chartRoot.innerHTML = "";
 
@@ -851,10 +859,17 @@ clL,7,LN`;
       const chords = chordLayout(displayMatrix);
       const color = d3.scaleOrdinal(d3.range(labels.length), colors);
 
+      /* ── Tick scale ─────────────────────────────────────────────── */
+      const sum = d3.sum(displayMatrix.flat());
+      const tickStep = d3.tickStep(0, sum, 100);
+      const tickStepMajor = d3.tickStep(0, sum, 20);
+      const formatTick = d3.formatPrefix(",.0", tickStep);
+
       const svg = d3
         .select(chartRoot)
         .append("svg")
         .attr("viewBox", [-width / 2, -height / 2, width, height])
+        .attr("style", "max-width: 100%; height: auto; font: 10px sans-serif;")
         .attr("aria-label", "Chord diagram of clonality sharing between groups");
 
       svg
@@ -876,15 +891,16 @@ clL,7,LN`;
 
       const chart = svg.append("g").attr("transform", "translate(0, 34)");
 
+      const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
+      const ribbon = d3.ribbon().radius(innerRadius);
+
+      /* ── Group arcs ─────────────────────────────────────────────── */
       const group = chart
         .append("g")
         .selectAll("g")
         .data(chords.groups)
         .join("g")
         .attr("class", "group");
-
-      const arc = d3.arc().innerRadius(innerRadius).outerRadius(outerRadius);
-      const ribbon = d3.ribbon().radius(innerRadius);
 
       group
         .append("path")
@@ -905,10 +921,31 @@ clL,7,LN`;
         })
         .on("mouseleave", () => {
           hideTooltip();
-          chart.selectAll(".ribbon").attr("opacity", 0.78);
+          chart.selectAll(".ribbon").attr("opacity", 0.7);
           group.selectAll("path").attr("opacity", 1);
         });
 
+      /* ── Tick marks + labels ────────────────────────────────────── */
+      const groupTick = group.append("g")
+        .selectAll("g")
+        .data(d => groupTicks(d, tickStep))
+        .join("g")
+        .attr("transform", d => `rotate(${d.angle * 180 / Math.PI - 90}) translate(${outerRadius},0)`);
+
+      groupTick.append("line")
+        .attr("stroke", "currentColor")
+        .attr("x2", 6);
+
+      groupTick
+        .filter(d => d.value % tickStepMajor === 0)
+        .append("text")
+        .attr("x", 8)
+        .attr("dy", "0.35em")
+        .attr("transform", d => d.angle > Math.PI ? "rotate(180) translate(-16)" : null)
+        .attr("text-anchor", d => d.angle > Math.PI ? "end" : null)
+        .text(d => formatTick(d.value));
+
+      /* ── Group name labels ──────────────────────────────────────── */
       group
         .append("text")
         .each((d) => {
@@ -920,15 +957,16 @@ clL,7,LN`;
         .attr("fill", "#243234")
         .attr("transform", (d) => `
           rotate(${(d.angle * 180) / Math.PI - 90})
-          translate(${outerRadius + 14})
+          translate(${outerRadius + 30})
           ${d.angle > Math.PI ? "rotate(180)" : ""}
         `)
         .attr("text-anchor", (d) => (d.angle > Math.PI ? "end" : "start"))
         .text((d) => labels[d.index]);
 
+      /* ── Ribbons ────────────────────────────────────────────────── */
       chart
         .append("g")
-        .attr("fill-opacity", 0.78)
+        .attr("fill-opacity", 0.7)
         .selectAll("path")
         .data(chords)
         .join("path")
@@ -939,7 +977,7 @@ clL,7,LN`;
           const targetValue = matrix[d.target.index][d.source.index];
           return color(sourceValue >= targetValue ? d.source.index : d.target.index);
         })
-        .attr("stroke", (d) => d3.color(color(d.source.index)).darker(0.7))
+        .attr("stroke", "white")
         .on("mousemove", function(event, d) {
           showTooltip(
             event,
@@ -952,7 +990,7 @@ clL,7,LN`;
         })
         .on("mouseleave", () => {
           hideTooltip();
-          chart.selectAll(".ribbon").attr("opacity", 0.78);
+          chart.selectAll(".ribbon").attr("opacity", 0.7);
           group.selectAll("path").attr("opacity", 1);
         });
 
@@ -974,9 +1012,9 @@ clL,7,LN`;
       const height = Math.max(500, Number(document.getElementById("heightInput").value) || 980);
       const padAngle = Math.max(0, Number(document.getElementById("padInput").value) || 0.035);
       const palette = document.getElementById("schemeInput").value;
-      const outerRadius = Math.min(width, height) * 0.39;
+      const outerRadius = Math.min(width, height) * 0.5 - 60;
       const bandOuterRadius = outerRadius;
-      const bandInnerRadius = bandOuterRadius - 26;
+      const bandInnerRadius = bandOuterRadius - 20;
       const ribbonRadius = bandInnerRadius - 10;
 
       chartRoot.innerHTML = "";
@@ -989,10 +1027,17 @@ clL,7,LN`;
       );
       const showBandLabels = bandLabelsInput.checked;
 
+      /* ── Tick scale ─────────────────────────────────────────────── */
+      const totalSum = layout.groups.reduce((s, g) => s + g.total, 0);
+      const cTickStep = d3.tickStep(0, totalSum, 100);
+      const cTickStepMajor = d3.tickStep(0, totalSum, 20);
+      const cFormatTick = d3.formatPrefix(",.0", cTickStep);
+
       const svg = d3
         .select(chartRoot)
         .append("svg")
         .attr("viewBox", [-width / 2, -height / 2, width, height])
+        .attr("style", "max-width: 100%; height: auto; font: 10px sans-serif;")
         .attr("aria-label", "Circos-like plot of clonality sharing between groups");
 
       svg
@@ -1083,6 +1128,27 @@ clL,7,LN`;
           chart.selectAll(".ribbon").attr("opacity", 0.72);
         });
 
+      /* ── Tick marks + labels ────────────────────────────────────── */
+      const cGroupTick = group.append("g")
+        .selectAll("g")
+        .data(d => groupTicks({ startAngle: d.startAngle, endAngle: d.endAngle, value: d.total }, cTickStep))
+        .join("g")
+        .attr("transform", d => `rotate(${d.angle * 180 / Math.PI - 90}) translate(${bandOuterRadius},0)`);
+
+      cGroupTick.append("line")
+        .attr("stroke", "currentColor")
+        .attr("x2", 6);
+
+      cGroupTick
+        .filter(d => d.value % cTickStepMajor === 0)
+        .append("text")
+        .attr("x", 8)
+        .attr("dy", "0.35em")
+        .attr("transform", d => d.angle > Math.PI ? "rotate(180) translate(-16)" : null)
+        .attr("text-anchor", d => d.angle > Math.PI ? "end" : null)
+        .text(d => cFormatTick(d.value));
+
+      /* ── Group name labels ──────────────────────────────────────── */
       group
         .append("text")
         .each((d) => {
@@ -1094,7 +1160,7 @@ clL,7,LN`;
         .attr("fill", "#243234")
         .attr("transform", (d) => `
           rotate(${(d.angle * 180) / Math.PI - 90})
-          translate(${outerRadius + 14})
+          translate(${bandOuterRadius + 30})
           ${d.angle > Math.PI ? "rotate(180)" : ""}
         `)
         .attr("text-anchor", (d) => (d.angle > Math.PI ? "end" : "start"))
@@ -1144,7 +1210,7 @@ clL,7,LN`;
           .attr("fill", "#243234")
           .attr("transform", (d) => `
             rotate(${(d.labelAngle * 180) / Math.PI - 90})
-            translate(${bandOuterRadius + 12})
+            translate(${bandOuterRadius + 30})
             ${d.labelAngle > Math.PI ? "rotate(180)" : ""}
           `)
           .attr("text-anchor", (d) => (d.labelAngle > Math.PI ? "end" : "start"))
@@ -1186,7 +1252,7 @@ clL,7,LN`;
           })
         )
         .attr("fill", (d) => color(d.sourceClone.groupIndex))
-        .attr("stroke", (d) => d3.color(color(d.sourceClone.groupIndex)).darker(0.7))
+        .attr("stroke", "white")
         .on("mousemove", function(event, d) {
           showTooltip(
             event,
