@@ -173,6 +173,11 @@ seu <- add_seurat_metadata(
 
 #### Sticky-ends rescue and per-chain purity (v0.11+)
 
+> For the full explainer including the DNA-strand metaphor that names the
+> mode, the biology behind the chain-aware defaults, and an alluvial-plot
+> recipe for visualizing rescue purity, see
+> [**STICKY_ENDS.md**](STICKY_ENDS.md).
+
 When `sticky = TRUE`, single-chain cells can inherit the dominant paired
 clonotype if their CDR3 maps unambiguously into the paired pool. The default
 policy encodes the biology of D-gene chains:
