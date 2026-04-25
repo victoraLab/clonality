@@ -49,3 +49,6 @@ docs/
 
 # translation temp files
 po/*~
+
+# Claude Code session/config dir
+.claude/

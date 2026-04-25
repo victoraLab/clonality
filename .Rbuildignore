@@ -2,3 +2,6 @@
 ^\.Rproj\.user$
 ^data-raw$
 ^LICENSE\.md$
+^\.claude$
+^scripts$
+^circos\.html d3js$
