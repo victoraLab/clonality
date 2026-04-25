@@ -15,7 +15,8 @@ tenx(
   col_res = c("full"),
   add_columns = NULL,
   cellranger_version = NULL,
-  ignore_version = FALSE
+  ignore_version = FALSE,
+  airr_normalize = c("auto", "always", "never")
 )
 }
 \arguments{
@@ -40,6 +41,12 @@ tenx(
 \item{cellranger_version}{Integer. Supported: 3, 7, or 9. Used to validate the expected number of columns. Default is 7.}
 
 \item{ignore_version}{Logical. If \code{TRUE}, skip version-based column-count validation. Default is \code{FALSE}.}
+
+\item{airr_normalize}{Character. One of \code{"auto"} (default), \code{"always"}, \code{"never"}.
+Controls whether AIRR / IgBLAST quirks (comma-separated alleles, logical-form
+\code{productive}) are normalized via \code{\link[=normalize_airr_to_cellranger]{normalize_airr_to_cellranger()}} before
+column renaming. \code{"auto"} triggers normalization only when AIRR-style
+patterns are detected.}
 }
 \value{
 Annotated clonality matrix with clonal group information, invisibly returned after internal call to \code{assigntenx()}.

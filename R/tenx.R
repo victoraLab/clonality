@@ -13,6 +13,11 @@
 #' @param cell Character. Cell type to process. One of: `"B"` (B cells), `"T"` (T cells), `"Tgd"` (γδ T cells). Default is `"T"`.
 #' @param col_res Character. Either `"full"` to retain all chain columns, or `"reduced"` to include only paired chains. Default is `"full"`.
 #' @param add_columns Character vector. Additional metadata columns to include in the output. Optional.
+#' @param airr_normalize Character. One of `"auto"` (default), `"always"`, `"never"`.
+#'   Controls whether AIRR / IgBLAST quirks (comma-separated alleles, logical-form
+#'   `productive`) are normalized via [normalize_airr_to_cellranger()] before
+#'   column renaming. `"auto"` triggers normalization only when AIRR-style
+#'   patterns are detected.
 #' @inheritParams cellranger_version_parser
 #' @return Annotated clonality matrix with clonal group information, invisibly returned after internal call to `assigntenx()`.
 #'
@@ -35,12 +40,15 @@ tenx <- function(data = NULL,
                  col_res = c("full"),
                  add_columns = NULL,
                  cellranger_version = NULL,
-                 ignore_version = FALSE) {
+                 ignore_version = FALSE,
+                 airr_normalize = c("auto", "always", "never")) {
 
   # Validate method
   if (!method %in% c("unique_paired", "sticky_ends", "unique_all")) {
     stop("Method chosen not valid. Choose one of: unique_paired, sticky_ends, unique_all.")
   }
+
+  airr_normalize <- match.arg(airr_normalize)
 
   # Use example fallback if NULL
   if (is.null(data)) {
@@ -52,6 +60,13 @@ tenx <- function(data = NULL,
   data <- cellranger_version_parser(data,
                                     cellranger_version = cellranger_version,
                                     ignore_version = ignore_version)
+
+  # Optionally normalize AIRR / IgBLAST quirks (comma-separated alleles,
+  # logical-form productive flag) before column renaming.
+  if (airr_normalize == "always" ||
+      (airr_normalize == "auto" && .looks_like_airr(data))) {
+    data <- normalize_airr_to_cellranger(data)
+  }
 
   data <- normalize_tenx_columns(data)
 
@@ -138,6 +153,20 @@ tenx <- function(data = NULL,
   obj_names <- paste0("Clonal.output.10x", names(out_list))
   list2env(stats::setNames(out_list, obj_names), envir = .GlobalEnv)
   return(out_list)
+}
+
+# Heuristic: looks like AIRR/IgBLAST output if it has v_call/j_call columns or
+# if comma-separated alleles appear in any V/J/C call column.
+.looks_like_airr <- function(data) {
+  airr_cols <- c("v_call", "j_call", "c_call", "d_call")
+  has_airr_cols <- any(airr_cols %in% names(data))
+  comma_cols <- intersect(c("v_gene", "d_gene", "j_gene", "c_gene", airr_cols), names(data))
+  has_commas <- any(vapply(comma_cols, function(col) {
+    any(grepl(",", as.character(data[[col]]), fixed = TRUE), na.rm = TRUE)
+  }, logical(1)))
+  has_logical_productive <- "productive" %in% names(data) &&
+    is.logical(data[["productive"]])
+  has_airr_cols || has_commas || has_logical_productive
 }
 
 normalize_tenx_columns <- function(data) {
