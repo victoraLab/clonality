@@ -28,7 +28,6 @@
 #' @import dplyr
 #' @importFrom stringr str_extract
 #' @importFrom openxlsx write.xlsx
-#' @importFrom data.table rbindlist
 #' @export
 tenx <- function(data = NULL,
                  experiment = "experiment1",

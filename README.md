@@ -13,9 +13,31 @@ The package currently helps with four broad tasks:
 
 ## Installation
 
+Core install (pulls all required `Imports` automatically):
+
 ```r
+# install.packages("devtools")
 devtools::install_github("victoraLab/clonality")
 ```
+
+Recommended install (also pulls the optional `Suggests` packages used by the
+Seurat integration, plate-level analysis, and the alluvial purity plot):
+
+```r
+devtools::install_github(
+  "victoraLab/clonality",
+  dependencies = TRUE
+)
+```
+
+`Suggests` includes:
+`Seurat`, `Matrix`, `ggplot2`, `ggalluvial`, `patchwork`, `ggplate`, `purrr`,
+`future`, `MASS`, `testthat`. None of these are required for the basic
+`clonality()` / `tenx()` workflow, but `add_seurat_metadata()`,
+`process_imgt_projects()`, and the plate-level helpers will fail with a
+`requireNamespace()` error if their corresponding `Suggests` packages aren't
+present. **None of the dependencies are on Bioconductor** — everything is
+on CRAN, so no `BiocManager` setup is required.
 
 ## What The Package Covers
 

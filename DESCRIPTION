@@ -21,14 +21,15 @@ Imports:
     stringr,
     readxl,
     gtools,
-    data.table,
     openxlsx,
     readr,
     tibble,
     tidyr
 Suggests:
     Seurat,
+    Matrix,
     ggplot2,
+    ggalluvial,
     patchwork,
     purrr,
     future,
