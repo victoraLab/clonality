@@ -171,6 +171,62 @@ seu <- add_seurat_metadata(
 )
 ```
 
+#### Sticky-ends rescue and per-chain purity (v0.11+)
+
+When `sticky = TRUE`, single-chain cells can inherit the dominant paired
+clonotype if their CDR3 maps unambiguously into the paired pool. The default
+policy encodes the biology of D-gene chains:
+
+```r
+purity = list(
+  IGH = 0.9, IGK = NA, IGL = NA,    # B cells: rescue heavy only
+  TRB = 0.9, TRA = NA,              # αβ T cells: rescue β only
+  TRD = 0.9, TRG = NA               # γδ T cells: rescue δ only
+)
+```
+
+D-gene chains (IGH, TRB, TRD) have hyper-variable CDR3s that uniquely identify
+a clone, so rescue at 0.9 purity is reliable. Non-D chains (IGK, IGL, TRA,
+TRG) have constrained CDR3 length and limited V repertoires, so the same CDR3
+typically appears across many unrelated paired clones — `NA` skips them.
+
+Override per-chain to opt into κ/λ rescue at high stringency:
+
+```r
+seu <- add_seurat_metadata(
+  seu, sticky = TRUE,
+  purity = list(IGH = 0.9, IGK = 0.95, IGL = 0.95),
+  verbose = TRUE   # prints inspect_purity() summary after the rescue pass
+)
+```
+
+After the rescue, the metadata gains `Res_dominant_purity` (numeric in
+[0, 1]) suitable for alluvial visualization:
+
+```r
+library(ggplot2); library(ggalluvial)
+df <- seu[[]] %>% dplyr::filter(!is.na(Res_dominant_purity))
+ggplot(df, aes(axis1 = clonality, axis2 = Res_clonality, alpha = Res_dominant_purity)) +
+  geom_alluvium(aes(fill = Res_clonality.correction)) +
+  geom_stratum() +
+  theme_minimal()
+```
+
+To audit the rescue at any time:
+
+```r
+inspect_purity(seu)
+#> Sticky-ends rescue summary
+#>  chain singles matched median_purity rescued at_0.8 at_0.9 at_1
+#>    IGH    4477    2801         1.000    2264    2264   1750 1576
+#>    IGK    6134    5116         0.395       0       0      0    0
+#>    IGL     504     461         0.211       0       0      0    0
+```
+
+**Migration from < v0.11**: scalar `purity = 0.8` still works (with a message)
+but is no longer recommended. The match logic also defaults to `match_mode =
+"exact"`; pass `match_mode = "substring"` to recover the legacy behavior.
+
 ```r
 imm <- gen_immunarch(
   seu,
@@ -270,7 +326,9 @@ One useful way to navigate the package is by grouping functions according to the
 
 | Function | Purpose |
 | --- | --- |
-| `add_seurat_metadata()` | Writes clonality annotations into a Seurat object |
+| `add_seurat_metadata()` | Writes clonality annotations into a Seurat object, with chain-aware sticky-ends rescue |
+| `inspect_purity()` | Per-chain summary of sticky-ends rescue purity (singles, matched, median purity, rescued) |
+| `normalize_airr_to_cellranger()` | Preprocesses IgBLAST AIRR / nanopore contigs into a CellRanger-shape table |
 | `gen_immunarch()` | Builds an immunarch-compatible structure from Seurat metadata |
 
 ## Example Pipelines
