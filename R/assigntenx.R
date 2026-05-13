@@ -219,7 +219,13 @@ assigntenx <- function(list.pairs = list.pairs,
       ident_col = "barcodes",
       mismatch = 0,
       suffix = i,
-      file = NULL
+      file = NULL,
+      # Enforce per-chain CDR3 length matching in addition to total length.
+      # `cdr3_length` is a column in df.full produced by row-wise pasting
+      # (e.g. "12_10" for an IGH_IGK paired cell). Without this, paired cells
+      # with compensating cross-chain indels (heavy +1, light -1) share the
+      # same total CDR3 length and can erroneously merge.
+      extra_bin_cols = "cdr3_length"
     )
 
     # user override

@@ -124,6 +124,50 @@ Supported cell modes include:
 - `cell = "T"`
 - `cell = "Tgd"`
 
+#### Tuning the internal `clonality()` call via `clonality_input`
+
+`tenx()` filters cells, groups them by chain class, and then runs
+[`clonality()`](#1-imgt-style-clonotype-assignment) once per chain class to
+assign clone IDs. The `clonality_input` argument is a **named `list()`** of
+overrides for that internal call.
+
+> **Use `list()`, not `c()`.** A vector flattens nested vectors, so
+> `c(cdr3_col = c("CDR3", "cdr3_col2"))` becomes a single character vector
+> named `cdr3_col1` / `cdr3_col2` — not the multi-CDR3 spec you intended.
+> Always wrap in `list(...)`.
+
+The most useful slots:
+
+| Slot | Default in `tenx()` | What it controls |
+|---|---|---|
+| `mismatch` | `0` | Percent CDR3 mismatch tolerance (0--100). `10` ≈ 10% divergence. Vectorize alongside `cdr3_col`. |
+| `cdr3_col` | `"CDR3"` (nucleotide) | Which concatenated CDR3 column to cluster on. Pass `c("CDR3", "cdr3_col2")` to cluster nucleotide AND amino-acid in one pass, producing `clonality_nt` and `clonality_aa` columns. |
+| `stringdist_method` | `"osa"` | String-distance method (`"lv"`, `"dl"`, `"jw"`, ...). Recycled to match `cdr3_col`. |
+| `output_original` | `TRUE` | Join clonality back to the per-cell metadata. Set `FALSE` for a minimal table. |
+| `file` | `NULL` | Path to write the per-chain-class result as `.xlsx`. |
+| `project` | `"project"` | Label written to every row's `project` column — useful when pooling runs. |
+
+Slots managed internally by `tenx()` (rarely worth overriding): `vgene_col`,
+`jgene_col`, `ident_col`, `cell`, `suffix`. They are wired to the column names
+that `tenx()` constructs in the per-cell metadata.
+
+```r
+# Allow 10% CDR3 mismatch
+tenx(data, clonality_input = list(mismatch = 10))
+
+# Cluster on nucleotide and amino-acid CDR3 in a single call
+tenx(data,
+     clonality_input = list(
+       cdr3_col = c("CDR3", "cdr3_col2"),
+       mismatch = c(0, 10)
+     ))
+
+# Save each chain-class clonality table to disk
+tenx(data, clonality_input = list(file = "clones.xlsx"))
+```
+
+See `?clonality` for the full list of accepted parameters.
+
 ### 3. Plate-based QC and visualization
 
 For plate sequencing projects, the package extends beyond clone calling to help identify real contigs, background signals, collapsed wells, and overall plate performance.
@@ -392,7 +436,7 @@ tenx_out <- tenx(
   cell = "B",
   only_productive = TRUE,
   only_true_cells = TRUE,
-  clonality_input = c(mismatch = 10),
+  clonality_input = list(mismatch = 10),
   cellranger_version = 7
 )
 ```
@@ -415,44 +459,52 @@ tenx_out <- tenx(
 
 ```r
 result <- clonality(
-  data            = formattedData,
-  ident_col       = "SequenceID",
-  vgene_col       = "V_gene",
-  jgene_col       = "J_gene",
-  cell            = "B",
-  cdr3_col        = "Junction",
-  mismatch        = 10,
+  data      = formattedData,
+  ident_col = "SequenceID",
+  vgene_col = "V_gene",
+  jgene_col = "J_gene",
+  cell      = "B",
+  cdr3_col  = "Junction",
+  mismatch  = 10,
   output_original = TRUE,
-  file            = "clonality_10.xlsx"
+  file      = "clonality_10.xlsx"
 )
 ```
 
-### Custom data -- multiple CDR3 columns (multi-mismatch)
+### Vector `cdr3_col` and/or `mismatch` (v0.12+)
 
-When your data frame contains both nucleotide and amino-acid CDR3 columns,
-you can cluster on each independently with a single `clonality()` call.
-Each CDR3 column gets its own `mismatch` threshold, and the output contains
-one `clonality_<tag>` column per CDR3 (e.g. `clonality_nt`, `clonality_aa`).
+`cdr3_col` and `mismatch` accept vectors. Whichever is longer determines the
+number of independent clustering passes; the shorter argument recycles. Each
+pass produces one `clonality_<tag>` column.
 
 ```r
-result <- clonality(
-  data            = formattedData,
-  ident_col       = "SequenceID",
-  vgene_col       = "V_gene",
-  jgene_col       = "J_gene",
-  cell            = "B",
-  cdr3_col        = c("Junction_nt", "Junction_aa"),
-  mismatch        = c(0, 10),          # 0 % for nt, 10 % for aa
-  output_original = TRUE,
-  file            = "clonality_multi.xlsx"
-)
+# (a) multi-CDR3: cluster nt and aa CDR3s side by side
+clonality(df, cdr3_col = c("Junction_nt", "Junction_aa"), mismatch = c(0, 10))
+# → clonality_nt, clonality_aa
 
-# Result contains both clonality_nt and clonality_aa columns
-head(result[, c("clonality_nt", "clonality_aa")])
+# (b) stringency scan: same CDR3, three thresholds
+clonality(df, cdr3_col = "Junction", mismatch = c(0, 10, 20))
+# → clonality_mm0, clonality_mm10, clonality_mm20
+
+# (c) one threshold across two CDR3 columns
+clonality(df, cdr3_col = c("Junction_nt", "Junction_aa"), mismatch = 0)
+# → clonality_nt, clonality_aa (both at mm0)
 ```
 
-`stringdist_method` and `suffix` are also recycled to match `cdr3_col`,
-so you can use different distance methods per CDR3 column if needed.
+Tags are auto-detected as `"nt"`/`"aa"` from sequence content; when the same
+CDR3 column is reused, they fall back to `"mm<value>"`. Pass
+`cdr3_tags = c("strict", "loose")` to label them yourself.
+
+`stringdist_method` and `suffix` follow the same recycling rule.
+
+The same vector `mismatch` works through `tenx()`:
+
+```r
+tenx(data = "...filtered_contig_annotations.csv",
+     method = "sticky_ends", cell = "B",
+     clonality_input = list(mismatch = c(0, 10, 20)))
+# Each Clonal.output.10x* table now has clonality_mm0, clonality_mm10, clonality_mm20
+```
 
 ### Multi-project IMGT processing
 

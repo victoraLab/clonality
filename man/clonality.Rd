@@ -2,7 +2,7 @@
 % Please edit documentation in R/clonality.R
 \name{clonality}
 \alias{clonality}
-\title{Annotate Clonality in Immune Repertoire Data}
+\title{Annotate clonality in immune-repertoire data}
 \usage{
 clonality(
   data = "example.xlsx",
@@ -20,75 +20,64 @@ clonality(
   stringdist_method = "osa",
   project = "project",
   cdr3_tags = NULL,
+  extra_bin_cols = NULL,
   ...
 )
 }
 \arguments{
-\item{data}{A data frame or a file path to a \code{.xlsx} file containing repertoire data.}
+\item{data}{Data frame or path to \code{.xlsx}.}
 
-\item{ident_col}{\code{Character}. The name of the column containing unique identifiers. Default: "Sequence_ID".}
+\item{ident_col, vgene_col, jgene_col}{Column names for the cell ID, V gene, J gene.}
 
-\item{vgene_col}{\code{Character}. The name of the column containing V gene annotations. Default: "VGENE_and_allele".}
+\item{cdr3_col}{Character vector of one or more CDR3 column names.}
 
-\item{jgene_col}{\code{Character}. The name of the column containing J gene annotations. Default: "JGENE_and_allele".}
+\item{cell}{\code{"T"} or \code{"B"}.}
 
-\item{cdr3_col}{\code{Character} vector. One or more column names containing CDR3 sequences.
-When multiple columns are provided, clustering is performed independently for each,
-producing separate \code{clonality_<tag>} columns. Default: "JUNCTION".}
+\item{output_original}{If \code{TRUE}, joins the clonality column(s) back onto the full input.}
 
-\item{cell}{\code{Character}. One of "T" or "B". Specifies T cell or B cell data. Default: "T".}
+\item{mismatch}{Numeric vector of percent mismatch tolerances (0–100). Cut height = \code{mismatch / 100}. \code{0} = identical CDR3 only; \code{10} ≈ 10\% divergence allowed.}
 
-\item{output_original}{\code{Logical}. If \code{TRUE}, joins results to the original input. Default: \code{FALSE}.}
+\item{suffix, stringdist_method}{Recycled to match the number of passes.}
 
-\item{mismatch}{\code{Numeric} vector. Percent mismatch tolerance used to subcluster sequences within the same V/J/CDR3-length bin (range: 0--100).
-Internally, pairwise CDR3 string distances are normalized by CDR3 length and the hierarchical tree
-is cut at \code{hclust_height = mismatch / 100}.
-\itemize{
-\item A value of \code{0} means \strong{no mismatch is allowed}: only identical CDR3 sequences cluster together.
-\item A value of \code{10} allows clustering of sequences that differ by up to about 10\% of CDR3 length.
-\item A value of \code{100} is the loosest setting and effectively prevents subclustering within a duplicated V/J/length bin.
-When \code{cdr3_col} has length > 1, \code{mismatch} is recycled to match.
-}}
+\item{file}{Optional \code{.xlsx} path to save the result.}
 
-\item{suffix}{\code{Character} vector. A string to append to the clonality group IDs. Recycled to match \code{cdr3_col}.}
+\item{quiet}{Return invisibly.}
 
-\item{file}{\code{Character}. Saves output as an excel file.}
+\item{filter_IMGT_sequences}{Filter for productive IMGT CDR3s before clustering.}
 
-\item{quiet}{\code{Logical}. Whether to print silently the result.}
+\item{project}{Optional label column added to the result.}
 
-\item{filter_IMGT_sequences}{\code{Logical}. Whether to filter for productive IMGT CDR3 sequences. Default: \code{FALSE}.}
+\item{cdr3_tags}{Optional override for the per-pass tags used in \verb{clonality_<tag>} column names. Auto-detected as \code{"nt"}/\code{"aa"} from sequence content; when the same \code{cdr3_col} is reused across passes, tags fall back to \code{"mm<value>"}.}
 
-\item{stringdist_method}{String distance method passed to \code{stringdist()}. Recycled to match \code{cdr3_col}.
-Defaults to "osa" (Optimal String Alignment). Other options include:
-"lv", "dl", "hamming", "lcs", "qgram", "cosine", "jaccard",
-"jw" (Jaro-Winkler), and "soundex". See \code{?stringdist::stringdist} for details.}
+\item{extra_bin_cols}{Optional character vector of column names whose values are
+appended to the V/J/length bin key. Cells must match on all of these columns
+to be considered for sub-clustering by CDR3 distance. Used by \code{\link[=assigntenx]{assigntenx()}}
+to enforce per-chain CDR3 length matching (so that paired cells with
+compensating indels across chains do not share a bin).}
 
-\item{project}{\code{Character}. Optional label to assign to all rows in the resulting data frame to identify the project or dataset. If not provided, defaults to "project".}
-
-\item{cdr3_tags}{\code{Character} vector. Optional override for the CDR3 column tags used
-in output column names (e.g. \code{c("nt","aa")}). If \code{NULL} (default), tags are
-auto-detected as \code{"nt"} or \code{"aa"} based on sequence content.}
-
-\item{...}{Additional arguments passed to \code{read_repertoire()}.}
+\item{...}{Passed to \code{read_repertoire()}.}
 }
 \value{
-A data frame with one or more \verb{clonality_*} columns added, or written to disk if \code{file} is specified.
+Data frame with one or more \verb{clonality_*} columns (or a single
+\code{clonality} column in the legacy single-pass case).
 }
 \description{
-Identifies clonal groups based on V gene, J gene, and CDR3 sequence similarity.
-Sequences with identical V-J-CDR3 length combinations are clustered using hierarchical clustering.
-Can return a full joined data frame or a simplified annotated output.
+Groups sequences into clones based on V/J gene identity and CDR3 similarity.
+Sequences sharing V, J, and CDR3 length are clustered by CDR3 string distance
+and the tree is cut at \code{mismatch / 100}.
 }
 \details{
-When \code{cdr3_col} is a vector of length > 1, the function runs one independent
-clustering pass per CDR3 column, each with its own \code{mismatch} and
-\code{stringdist_method} (recycled to match).
-The output contains one \code{clonality_<tag>} column per CDR3 column
-(e.g. \code{clonality_nt}, \code{clonality_aa}).
+\code{cdr3_col} and \code{mismatch} accept vectors. Whichever is longer determines how
+many independent clustering passes are run; the shorter argument is recycled
+(must be length 1). Each pass produces a \verb{clonality_<tag>} column.
+\itemize{
+\item \verb{cdr3_col = "Junction", mismatch = 0} → one \code{clonality} column (legacy)
+\item \verb{cdr3_col = c("nt","aa"), mismatch = c(0, 10)} → \code{clonality_nt}, \code{clonality_aa}
+\item \verb{cdr3_col = "Junction", mismatch = c(0, 10, 20)} → \code{clonality_mm0}, \code{clonality_mm10}, \code{clonality_mm20}
+}
 }
 \examples{
-results <- clonality(data = tra, vgene_col = "V_GENE_and_allele", jgene_col = "J_GENE_and_allele")
-results <- clonality(data = trb,  vgene_col = "V_GENE_and_allele", jgene_col = "J_GENE_and_allele")
-results <- clonality(data = IMGT_TCR_Summary_File, cdr3_col  = "DNA_Junction")
+results <- clonality(tra, vgene_col = "V_GENE_and_allele", jgene_col = "J_GENE_and_allele")
+results <- clonality(IMGT_TCR_Summary_File, cdr3_col = "DNA_Junction")
 
 }

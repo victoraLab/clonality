@@ -96,3 +96,109 @@ test_that("mismatch controls normalized CDR3 distance tolerance, not similarity"
   expect_equal(length(unique(strict$clonality)), 2L)
   expect_equal(length(unique(tolerant$clonality)), 1L)
 })
+
+## ── v0.12: single CDR3 column with vector mismatch (stringency scan) ──────
+
+test_that("single cdr3_col + vector mismatch yields one clonality_mm<v> column per threshold", {
+  df <- data.frame(
+    Sequence_ID = c("s1", "s2", "s3"),
+    VGENE_and_allele = c("IGHV1-1*01", "IGHV1-1*01", "IGHV1-1*01"),
+    JGENE_and_allele = c("IGHJ1*01", "IGHJ1*01", "IGHJ1*01"),
+    JUNCTION = c("CARWGLRQEGFD", "CARWGLRQEGFE", "CARWGLRQEGFF"),
+    stringsAsFactors = FALSE
+  )
+
+  res <- clonality(df, cell = "B",
+                   cdr3_col = "JUNCTION",
+                   mismatch = c(0, 100))
+
+  # Tag auto-fallback to "mm<value>" when the same CDR3 col is reused
+  expect_true("clonality_mm0" %in% names(res))
+  expect_true("clonality_mm100" %in% names(res))
+
+  # mm0: each unique CDR3 distinct
+  expect_equal(length(unique(res$clonality_mm0)), 3L)
+  # mm100: all collapse into one
+  expect_equal(length(unique(res$clonality_mm100)), 1L)
+})
+
+test_that("recycling is symmetric: scalar cdr3_col + vector mismatch and vice versa", {
+  df <- data.frame(
+    Sequence_ID = c("s1", "s2"),
+    VGENE_and_allele = c("IGHV1-1*01", "IGHV1-1*01"),
+    JGENE_and_allele = c("IGHJ1*01", "IGHJ1*01"),
+    JUNCTION = c("CARWGLRQEGFD", "CARWGLRQEGFE"),
+    stringsAsFactors = FALSE
+  )
+
+  # 1 col, 2 thresholds → K=2
+  r1 <- clonality(df, cell = "B", cdr3_col = "JUNCTION", mismatch = c(0, 100))
+  expect_equal(sum(grepl("^clonality", names(r1))), 2L)
+
+  # 2 cols, 1 threshold → K=2 (mismatch recycled)
+  r2 <- clonality(df, cell = "B", cdr3_col = c("JUNCTION", "JUNCTION"), mismatch = 0)
+  expect_equal(sum(grepl("^clonality", names(r2))), 2L)
+})
+
+test_that("mismatched vector lengths (>1 vs >1, unequal) error clearly", {
+  df <- data.frame(
+    Sequence_ID = c("s1", "s2"),
+    VGENE_and_allele = c("IGHV1-1*01", "IGHV1-1*01"),
+    JGENE_and_allele = c("IGHJ1*01", "IGHJ1*01"),
+    JUNCTION = c("CARWGLRQEGFD", "CARWGLRQEGFE"),
+    stringsAsFactors = FALSE
+  )
+
+  expect_error(
+    clonality(df, cell = "B",
+              cdr3_col = c("JUNCTION", "JUNCTION"),
+              mismatch = c(0, 10, 20)),
+    "must be length 1 or 3"
+  )
+})
+
+test_that("extra_bin_cols prevents compensating-indel cells from sharing a bin", {
+  # Two synthetic 'paired cells' (heavy_light concatenated) where total CDR3
+  # length is identical but per-chain lengths differ. Without extra_bin_cols
+  # these would share a bin and (with sufficient mismatch) cluster together.
+  df <- data.frame(
+    Sequence_ID = c("a", "b"),
+    VGENE_and_allele = c("IGHV1-1*01_IGKV1-1*01", "IGHV1-1*01_IGKV1-1*01"),
+    JGENE_and_allele = c("IGHJ1*01_IGKJ1*01", "IGHJ1*01_IGKJ1*01"),
+    # Cell a: heavy length 12, light length 10 → concatenated "12_10"
+    # Cell b: heavy length 13, light length 9  → concatenated "13_9"
+    # Both have same total chars after the _ separator (12+1+10 == 13+1+9 == 23)
+    JUNCTION        = c("CARAAAAAAAAA_CQQAAAAAAA",
+                        "CARAAAAAAAAAB_CQQAAAAAA"),
+    cdr3_length     = c("12_10", "13_9"),
+    stringsAsFactors = FALSE
+  )
+
+  # Without extra_bin_cols: bin key is V_J_total-length → same bin → can merge
+  # at any tolerant mismatch (here mm=20 normalised CDR3 distance ≈ 2/23 ≈ 8.7%).
+  permissive <- clonality(df, cell = "B", cdr3_col = "JUNCTION", mismatch = 20)
+  expect_equal(length(unique(permissive$clonality)), 1L)
+
+  # With extra_bin_cols = "cdr3_length": the per-chain length string is part
+  # of the bin key → different bins → cannot share a clonality ID.
+  strict <- clonality(df, cell = "B", cdr3_col = "JUNCTION",
+                      mismatch = 20, extra_bin_cols = "cdr3_length")
+  expect_equal(length(unique(strict$clonality)), 2L)
+})
+
+test_that("cdr3_tags override controls the output column names", {
+  df <- data.frame(
+    Sequence_ID = c("s1", "s2"),
+    VGENE_and_allele = c("IGHV1-1*01", "IGHV1-1*01"),
+    JGENE_and_allele = c("IGHJ1*01", "IGHJ1*01"),
+    JUNCTION = c("CARWGLRQEGFD", "CARWGLRQEGFE"),
+    stringsAsFactors = FALSE
+  )
+
+  res <- clonality(df, cell = "B",
+                   cdr3_col = "JUNCTION",
+                   mismatch = c(0, 25),
+                   cdr3_tags = c("strict", "loose"))
+
+  expect_true(all(c("clonality_strict", "clonality_loose") %in% names(res)))
+})

@@ -30,7 +30,59 @@ tenx(
 
 \item{only_true_cells}{Logical. Whether to filter out low-quality/non-true cells (i.e., \code{is_cell != TRUE}). Default is \code{TRUE}.}
 
-\item{clonality_input}{Named vector. Parameters passed to the internal \code{clonality()} function (e.g., mismatch thresholds).}
+\item{clonality_input}{\strong{Named list} of overrides for the internal call
+to \code{\link[=clonality]{clonality()}} that defines clones once cells have been filtered and
+grouped by chain class. \code{tenx()} builds a per-cell metadata table and
+then calls \code{clonality()} once per chain class with a set of sensible
+defaults; \code{clonality_input} lets you change any of those defaults.
+
+It \strong{must be a \code{list()}}, not a \code{c()} vector. A vector silently flattens
+any element that is itself a vector — so
+\code{clonality_input = c(cdr3_col = c("CDR3", "cdr3_col2"))} collapses into a
+single 2-element character vector named \code{cdr3_col1} / \code{cdr3_col2}, which
+is \strong{not} what you want. Use \code{list(cdr3_col = c("CDR3", "cdr3_col2"))}
+instead. For scalar overrides (\code{list(mismatch = 10)}), either form works,
+but \code{list()} is recommended for consistency.
+
+The slots that are commonly overridden are:
+\itemize{
+\item \code{mismatch} — percent CDR3 mismatch tolerance (0--100). Default \code{0} =
+identical CDR3s only. Pass a vector when also passing a multi-element
+\code{cdr3_col} (see below).
+\item \code{cdr3_col} — column(s) in the per-cell metadata to use as the CDR3 for
+clonality. Defaults to \code{"CDR3"} (concatenated nucleotide CDR3 across
+chains). Use \code{c("CDR3", "cdr3_col2")} to cluster on both nucleotide and
+amino-acid CDR3 in a single pass; the output then contains both
+\code{clonality_nt} and \code{clonality_aa} columns.
+\item \code{stringdist_method} — string-distance method passed to
+\code{stringdist::stringdistmatrix()}. Default \code{"osa"}. Recycled to match
+\code{cdr3_col}.
+\item \code{output_original} — \code{TRUE} (default) joins the clonality assignment back
+to the per-cell metadata so the output keeps barcodes, V/J genes,
+concatenated CDR3s, etc. Set \code{FALSE} for a minimal output.
+\item \code{file} — path to an \code{.xlsx} file to save the per-chain-class result.
+\item \code{project} — character label tagged onto each row's \code{project} column.
+}
+
+The following slots are managed internally by \code{tenx()} and overriding
+them is rarely useful (and may break the pipeline):
+\code{vgene_col}, \code{jgene_col}, \code{ident_col}, \code{cell}, \code{suffix}. They default to
+the column names that \code{tenx()} constructs in the per-cell metadata.
+
+Examples:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{# Default clones, but allow 10\% CDR3 mismatch
+tenx(data, clonality_input = list(mismatch = 10))
+
+# Cluster on both nucleotide and amino-acid CDR3, with their own
+# mismatch thresholds:
+tenx(data,
+     clonality_input = list(cdr3_col = c("CDR3", "cdr3_col2"),
+                            mismatch = c(0, 10)))
+
+# Save the per-chain-class clonality table to disk:
+tenx(data, clonality_input = list(file = "clones.xlsx"))
+}\if{html}{\out{</div>}}}
 
 \item{cell}{Character. Cell type to process. One of: \code{"B"} (B cells), \code{"T"} (T cells), \code{"Tgd"} (γδ T cells). Default is \code{"T"}.}
 

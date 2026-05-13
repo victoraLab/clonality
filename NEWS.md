@@ -1,3 +1,57 @@
+# clonality 0.12
+
+## Bug fix: per-chain CDR3 length binning in paired clones (via `tenx()`)
+
+`tenx()` ultimately calls `clonality()` with a single concatenated CDR3 string
+per cell (e.g. `"<heavy_cdr3>_<light_cdr3>"`). The bin key inside `clonality()`
+included the **total** concatenated CDR3 length but not the per-chain lengths.
+As a result, two paired cells with compensating cross-chain indels — e.g.
+`cdr3_IGH = 12, cdr3_IGK = 10` and `cdr3_IGH = 13, cdr3_IGK = 9`, both with
+total length 22 — ended up in the same bin and could merge under OSA
+sub-clustering at `mismatch > 0`.
+
+Fixed by adding an `extra_bin_cols` argument to `clonality()` and setting the
+default in `assigntenx()` to `"cdr3_length"`, the per-chain length string
+already produced for the output (e.g. `"12_10"`). This makes paired cells
+that disagree on per-chain CDR3 length land in separate bins, regardless of
+mismatch tolerance.
+
+Behavioral change: at `mismatch > 0`, paired clones that used to absorb
+cross-chain-indel cells now split them into separate clonality IDs. Single-
+chain workflows are unaffected.
+
+## Mismatch-only scans in `clonality()` (and through `tenx()`)
+
+`clonality()` now accepts a single `cdr3_col` with a vector `mismatch`, running
+one independent clustering pass per threshold and producing one
+`clonality_<tag>` column per pass:
+
+```r
+clonality(data = df, cdr3_col = "Junction", mismatch = c(0, 10, 20))
+# → clonality_mm0, clonality_mm10, clonality_mm20
+```
+
+The recycling rule is symmetric: `K = max(length(cdr3_col), length(mismatch))`,
+and whichever argument is length 1 is recycled to match. So all three of these
+work in a single call:
+
+| Call | K | Output columns |
+|---|---|---|
+| `cdr3_col = "Junction", mismatch = 0` | 1 | `clonality` (legacy single-pass) |
+| `cdr3_col = c("nt","aa"), mismatch = c(0, 10)` | 2 | `clonality_nt`, `clonality_aa` |
+| `cdr3_col = "Junction", mismatch = c(0, 10, 20)` | 3 | `clonality_mm0`, `clonality_mm10`, `clonality_mm20` |
+| `cdr3_col = c("nt","aa"), mismatch = 0` | 2 | `clonality_nt`, `clonality_aa` (both at mm0) |
+
+Tag auto-naming falls back to `"mm<value>"` when the same `cdr3_col` is used
+across multiple passes; pass `cdr3_tags = c(...)` to override.
+
+The same vector `mismatch` flows through `tenx(clonality_input = list(mismatch = c(0, 10, 20)))`
+to produce a stringency scan on a 10x dataset in one call.
+
+## Other
+
+- Simplified the `?clonality` docstring; the long-form explanation moved to NEWS.
+
 # clonality 0.11
 
 ## Sticky-ends rescue overhaul

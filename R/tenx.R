@@ -9,7 +9,58 @@
 #' @param method Character. Clonality inference method. One of: `"unique_paired"`, `"sticky_ends"`, `"unique_all"`. Default is `"unique_paired"`.
 #' @param only_productive Logical. Whether to filter non-productive chains. Default is `TRUE`.
 #' @param only_true_cells Logical. Whether to filter out low-quality/non-true cells (i.e., `is_cell != TRUE`). Default is `TRUE`.
-#' @param clonality_input Named vector. Parameters passed to the internal `clonality()` function (e.g., mismatch thresholds).
+#' @param clonality_input **Named list** of overrides for the internal call
+#'   to [clonality()] that defines clones once cells have been filtered and
+#'   grouped by chain class. `tenx()` builds a per-cell metadata table and
+#'   then calls `clonality()` once per chain class with a set of sensible
+#'   defaults; `clonality_input` lets you change any of those defaults.
+#'
+#'   It **must be a `list()`**, not a `c()` vector. A vector silently flattens
+#'   any element that is itself a vector — so
+#'   `clonality_input = c(cdr3_col = c("CDR3", "cdr3_col2"))` collapses into a
+#'   single 2-element character vector named `cdr3_col1` / `cdr3_col2`, which
+#'   is **not** what you want. Use `list(cdr3_col = c("CDR3", "cdr3_col2"))`
+#'   instead. For scalar overrides (`list(mismatch = 10)`), either form works,
+#'   but `list()` is recommended for consistency.
+#'
+#'   The slots that are commonly overridden are:
+#'
+#'   - `mismatch` — percent CDR3 mismatch tolerance (0--100). Default `0` =
+#'     identical CDR3s only. Pass a vector when also passing a multi-element
+#'     `cdr3_col` (see below).
+#'   - `cdr3_col` — column(s) in the per-cell metadata to use as the CDR3 for
+#'     clonality. Defaults to `"CDR3"` (concatenated nucleotide CDR3 across
+#'     chains). Use `c("CDR3", "cdr3_col2")` to cluster on both nucleotide and
+#'     amino-acid CDR3 in a single pass; the output then contains both
+#'     `clonality_nt` and `clonality_aa` columns.
+#'   - `stringdist_method` — string-distance method passed to
+#'     `stringdist::stringdistmatrix()`. Default `"osa"`. Recycled to match
+#'     `cdr3_col`.
+#'   - `output_original` — `TRUE` (default) joins the clonality assignment back
+#'     to the per-cell metadata so the output keeps barcodes, V/J genes,
+#'     concatenated CDR3s, etc. Set `FALSE` for a minimal output.
+#'   - `file` — path to an `.xlsx` file to save the per-chain-class result.
+#'   - `project` — character label tagged onto each row's `project` column.
+#'
+#'   The following slots are managed internally by `tenx()` and overriding
+#'   them is rarely useful (and may break the pipeline):
+#'   `vgene_col`, `jgene_col`, `ident_col`, `cell`, `suffix`. They default to
+#'   the column names that `tenx()` constructs in the per-cell metadata.
+#'
+#'   Examples:
+#'   ```r
+#'   # Default clones, but allow 10% CDR3 mismatch
+#'   tenx(data, clonality_input = list(mismatch = 10))
+#'
+#'   # Cluster on both nucleotide and amino-acid CDR3, with their own
+#'   # mismatch thresholds:
+#'   tenx(data,
+#'        clonality_input = list(cdr3_col = c("CDR3", "cdr3_col2"),
+#'                               mismatch = c(0, 10)))
+#'
+#'   # Save the per-chain-class clonality table to disk:
+#'   tenx(data, clonality_input = list(file = "clones.xlsx"))
+#'   ```
 #' @param cell Character. Cell type to process. One of: `"B"` (B cells), `"T"` (T cells), `"Tgd"` (γδ T cells). Default is `"T"`.
 #' @param col_res Character. Either `"full"` to retain all chain columns, or `"reduced"` to include only paired chains. Default is `"full"`.
 #' @param add_columns Character vector. Additional metadata columns to include in the output. Optional.
@@ -48,6 +99,21 @@ tenx <- function(data = NULL,
   }
 
   airr_normalize <- match.arg(airr_normalize)
+
+  # clonality_input must be a list (or NULL). A bare named vector would
+  # silently flatten any vector-valued slot like cdr3_col = c("CDR3", "cdr3_col2").
+  if (!is.null(clonality_input) && !is.list(clonality_input)) {
+    if (is.atomic(clonality_input) && !is.null(names(clonality_input))) {
+      stop(
+        "`clonality_input` must be a list(), not a c() vector. A vector ",
+        "flattens nested values: e.g. c(cdr3_col = c(\"CDR3\", \"cdr3_col2\")) ",
+        "becomes a single character vector, not a multi-CDR3 spec. ",
+        "Use list(cdr3_col = c(\"CDR3\", \"cdr3_col2\"), mismatch = c(0, 10)) instead.",
+        call. = FALSE
+      )
+    }
+    stop("`clonality_input` must be a named list (or NULL).", call. = FALSE)
+  }
 
   # Use example fallback if NULL
   if (is.null(data)) {
