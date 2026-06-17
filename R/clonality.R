@@ -15,7 +15,13 @@
 #' @param data Data frame or path to `.xlsx`.
 #' @param ident_col,vgene_col,jgene_col Column names for the cell ID, V gene, J gene.
 #' @param cdr3_col Character vector of one or more CDR3 column names.
-#' @param mismatch Numeric vector of percent mismatch tolerances (0–100). Cut height = `mismatch / 100`. `0` = identical CDR3 only; `10` ≈ 10% divergence allowed.
+#' @param mismatch Numeric vector of percent mismatch tolerances (0–100). Cut height = `mismatch / 100`. `0` = identical CDR3 only; `10` ≈ 10% divergence allowed. Ignored for any pass where `max_edits` is set.
+#' @param max_edits Optional absolute edit-distance cutoff (NULL by default, recycled per pass). When
+#'   set, that pass clusters on the RAW (un-normalized) CDR3 `stringdist` instead of the
+#'   length-normalized percent `mismatch` — e.g. `max_edits = 1, stringdist_method = "hamming"` is a
+#'   true absolute Hamming-1 (exactly one mismatch regardless of CDR3 length). The default percent
+#'   `mismatch` is length-proportional (≈1 edit at `mismatch = 10` for typical CDR3, but exact-only
+#'   for short CDR3 and ≤2 edits for long ones); `max_edits` removes that length dependence.
 #' @param cell `"T"` or `"B"`.
 #' @param output_original If `TRUE`, joins the clonality column(s) back onto the full input.
 #' @param file Optional `.xlsx` path to save the result.
@@ -52,6 +58,7 @@ clonality <- function(data = "example.xlsx",
                       cell = "T",
                       output_original = FALSE,
                       mismatch = 0,
+                      max_edits = NULL,
                       suffix = NULL,
                       file = NULL,
                       quiet = FALSE,
@@ -128,6 +135,13 @@ clonality <- function(data = "example.xlsx",
   cdr3_col          <- recycle_to(cdr3_col,          K, "cdr3_col")
   mismatch          <- recycle_to(mismatch,          K, "mismatch")
   stringdist_method <- recycle_to(stringdist_method, K, "stringdist_method")
+  if (!is.null(max_edits)) {
+    if (!is.numeric(max_edits) || any(max_edits < 0)) {
+      stop("'max_edits' must be NULL or non-negative (absolute edit-distance cutoff).",
+           call. = FALSE)
+    }
+    max_edits <- recycle_to(max_edits, K, "max_edits")
+  }
   suffix            <- recycle_to(
     if (is.null(suffix)) NA_character_ else suffix,
     K, "suffix"
@@ -179,7 +193,8 @@ clonality <- function(data = "example.xlsx",
         clonal_id    = clonal_id,
         cdr3_lengths = tmp$CDR3L,
         dist_method  = stringdist_method[[k]],
-        h_height     = mismatch[[k]] / 100
+        h_height     = mismatch[[k]] / 100,
+        max_edits    = if (is.null(max_edits)) NULL else max_edits[[k]]
       )
     } else {
       tmp$clonality <- assign_unique_ids(tmp)

@@ -9,7 +9,8 @@ cluster_duplicates_by_cdr3(
   clonal_id,
   cdr3_lengths,
   dist_method = "osa",
-  h_height = 0
+  h_height = 0,
+  max_edits = NULL
 )
 }
 \arguments{
@@ -21,7 +22,13 @@ cluster_duplicates_by_cdr3(
 
 \item{dist_method}{String distance method passed to \code{stringdist::stringdistmatrix()}.}
 
-\item{h_height}{Clustering height threshold (0–1); typically \code{mismatch / 100}.}
+\item{h_height}{Clustering height threshold (0–1); typically \code{mismatch / 100}. Applied to the
+length-normalized distance (\verb{stringdist / CDR3 length}). Ignored when \code{max_edits} is set.}
+
+\item{max_edits}{Optional absolute edit-distance cutoff. When non-\code{NULL}, the tree is cut on the
+RAW (un-normalized) \code{stringdist} at this height instead of the length-normalized \code{h_height} —
+e.g. \code{max_edits = 1} with \code{dist_method = "hamming"} is a true absolute Hamming-1 (one mismatch
+regardless of CDR3 length). \code{max_edits = 0} is exact-identity (same as \code{h_height = 0}).}
 }
 \value{
 A data frame with an added \code{clonality} column.

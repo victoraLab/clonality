@@ -13,6 +13,7 @@ clonality(
   cell = "T",
   output_original = FALSE,
   mismatch = 0,
+  max_edits = NULL,
   suffix = NULL,
   file = NULL,
   quiet = FALSE,
@@ -35,7 +36,14 @@ clonality(
 
 \item{output_original}{If \code{TRUE}, joins the clonality column(s) back onto the full input.}
 
-\item{mismatch}{Numeric vector of percent mismatch tolerances (0–100). Cut height = \code{mismatch / 100}. \code{0} = identical CDR3 only; \code{10} ≈ 10\% divergence allowed.}
+\item{mismatch}{Numeric vector of percent mismatch tolerances (0–100). Cut height = \code{mismatch / 100}. \code{0} = identical CDR3 only; \code{10} ≈ 10\% divergence allowed. Ignored for any pass where \code{max_edits} is set.}
+
+\item{max_edits}{Optional absolute edit-distance cutoff (NULL by default, recycled per pass). When
+set, that pass clusters on the RAW (un-normalized) CDR3 \code{stringdist} instead of the
+length-normalized percent \code{mismatch} — e.g. \verb{max_edits = 1, stringdist_method = "hamming"} is a
+true absolute Hamming-1 (exactly one mismatch regardless of CDR3 length). The default percent
+\code{mismatch} is length-proportional (≈1 edit at \code{mismatch = 10} for typical CDR3, but exact-only
+for short CDR3 and ≤2 edits for long ones); \code{max_edits} removes that length dependence.}
 
 \item{suffix, stringdist_method}{Recycled to match the number of passes.}
 

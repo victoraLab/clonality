@@ -13,13 +13,20 @@
 #' @param clonal_id A character vector of V–J–CDR3 length identifiers.
 #' @param cdr3_lengths A numeric vector of CDR3 lengths, same length as `clonal_id`.
 #' @param dist_method String distance method passed to `stringdist::stringdistmatrix()`.
-#' @param h_height Clustering height threshold (0–1); typically `mismatch / 100`.
+#' @param h_height Clustering height threshold (0–1); typically `mismatch / 100`. Applied to the
+#'   length-normalized distance (`stringdist / CDR3 length`). Ignored when `max_edits` is set.
+#' @param max_edits Optional absolute edit-distance cutoff. When non-`NULL`, the tree is cut on the
+#'   RAW (un-normalized) `stringdist` at this height instead of the length-normalized `h_height` —
+#'   e.g. `max_edits = 1` with `dist_method = "hamming"` is a true absolute Hamming-1 (one mismatch
+#'   regardless of CDR3 length). `max_edits = 0` is exact-identity (same as `h_height = 0`).
 #'
 #' @return A data frame with an added `clonality` column.
 #'
 #' @export
 cluster_duplicates_by_cdr3 <- function(clonal.df, clonal_id, cdr3_lengths,
-                                          dist_method = "osa", h_height = 0) {
+                                          dist_method = "osa", h_height = 0,
+                                          max_edits = NULL) {
+  absolute <- !is.null(max_edits)
 
   # Identify bin IDs that occur more than once (i.e., bins needing within-bin subclustering).
   duplicated_ids <- unique(clonal_id[duplicated(clonal_id)])
@@ -41,9 +48,9 @@ cluster_duplicates_by_cdr3 <- function(clonal.df, clonal_id, cdr3_lengths,
     # Collapse to unique CDR3 sequences to avoid N^2 work on repeated identical reads.
     uniq_seqs <- unique(seqs)
 
-    # FAST PATH: mismatch == 0 (h_height == 0) => exact identity grouping.
-    # Each unique CDR3 within this bin gets a unique subcluster label.
-    if (h_height == 0) {
+    # FAST PATH: a zero threshold (percent h_height == 0, or absolute max_edits == 0) =>
+    # exact identity grouping. Each unique CDR3 within this bin gets a unique subcluster label.
+    if (if (absolute) max_edits == 0 else h_height == 0) {
       # For each row, map its CDR3 to the index of the corresponding unique CDR3.
       # Example: if 90 rows share the same CDR3, they all map to the same k.
       k <- match(seqs, uniq_seqs)  # integers 1..length(uniq_seqs)
@@ -68,13 +75,21 @@ cluster_duplicates_by_cdr3 <- function(clonal.df, clonal_id, cdr3_lengths,
       useNames = FALSE
     )
 
-    # Normalize distances by CDR3 length (constant within this bin).
-    L <- cdr3_lengths[idx][1]
-    dist_obj <- stats::as.dist(dist_mat / L)
+    # Absolute mode: cut on the raw stringdist (e.g. Hamming-1 = one mismatch, any length).
+    # Percent mode (default): normalize by CDR3 length (constant within this bin) and cut at
+    # h_height = mismatch/100.
+    if (absolute) {
+      dist_obj <- stats::as.dist(dist_mat)
+      cut_h <- max_edits
+    } else {
+      L <- cdr3_lengths[idx][1]
+      dist_obj <- stats::as.dist(dist_mat / L)
+      cut_h <- h_height
+    }
 
     # Hierarchical clustering + cut at the requested height.
     hc <- stats::hclust(dist_obj)
-    ct <- stats::cutree(hc, h = h_height)  # cluster label for each entry of uniq_seqs
+    ct <- stats::cutree(hc, h = cut_h)  # cluster label for each entry of uniq_seqs
 
     # Map per-unique cluster labels back to every original row.
     m <- match(seqs, uniq_seqs)
