@@ -3,10 +3,10 @@
 `clonality` is an R package for assigning B cell and T cell receptor clonotypes from repertoire sequencing data.
 It grew around practical analysis needs for IMGT HighV-QUEST outputs, 10x Genomics Cell Ranger V(D)J annotations, and plate-based repertoire experiments where clone calling and plate quality assessment need to live in the same workflow.
 
-The package currently helps with four broad tasks:
+The package currently helps with five broad tasks:
 
 - clonotype assignment from IMGT-style tables
-- clonotype assignment from 10x Genomics V(D)J contig annotations
+- clonotype assignment from 10x Genomics V(D)J contig annotations, including multi-sample ingestion and per-chain Hamming distance grouping
 - plate-level contig inspection and QC
 - downstream integration with Seurat and immunarch-friendly formats
 - interactive Circos-style clone sharing visualization in a browser
@@ -141,8 +141,10 @@ The most useful slots:
 | Slot | Default in `tenx()` | What it controls |
 |---|---|---|
 | `mismatch` | `0` | Percent CDR3 mismatch tolerance (0--100). `10` ≈ 10% divergence. Vectorize alongside `cdr3_col`. |
+| `max_edits` | `NULL` | Absolute (un-normalized) edit-distance cutoff. When set, the tree is cut on the raw `stringdist` instead of the length-normalized `mismatch`. E.g. `max_edits = 1` with `stringdist_method = "hamming"` allows exactly one substitution anywhere in the concatenated CDR3, regardless of length. |
+| `max_edits_per_chain` | `NULL` | Like `max_edits`, but enforced **independently per chain**: two cells cluster together only when every chain's CDR3 is within this many edits of its counterpart. Requires `stringdist_method = "hamming"`. Internally expands to `max_edits + per_chain_cdr3_cols`. |
 | `cdr3_col` | `"CDR3"` (nucleotide) | Which concatenated CDR3 column to cluster on. Pass `c("CDR3", "cdr3_col2")` to cluster nucleotide AND amino-acid in one pass, producing `clonality_nt` and `clonality_aa` columns. |
-| `stringdist_method` | `"osa"` | String-distance method (`"lv"`, `"dl"`, `"jw"`, ...). Recycled to match `cdr3_col`. |
+| `stringdist_method` | `"osa"` | String-distance method (`"lv"`, `"dl"`, `"hamming"`, ...). Recycled to match `cdr3_col`. |
 | `output_original` | `TRUE` | Join clonality back to the per-cell metadata. Set `FALSE` for a minimal table. |
 | `file` | `NULL` | Path to write the per-chain-class result as `.xlsx`. |
 | `project` | `"project"` | Label written to every row's `project` column — useful when pooling runs. |
@@ -504,6 +506,60 @@ tenx(data = "...filtered_contig_annotations.csv",
      method = "sticky_ends", cell = "B",
      clonality_input = list(mismatch = c(0, 10, 20)))
 # Each Clonal.output.10x* table now has clonality_mm0, clonality_mm10, clonality_mm20
+```
+
+### Multi-sample ingestion (v0.13+)
+
+`tenx()` accepts a list or character vector of multiple
+`filtered_contig_annotations.csv` paths in a single call. Each sample is
+loaded and filtered independently; barcodes are suffixed with the corresponding
+`project_names` entry to keep them globally unique. Clonotype assignment runs
+on the combined pool, so cells sharing a CDR3 across samples naturally receive
+the same clone ID.
+
+```r
+paths <- c(
+  "TC050526/filtered_contig_annotations.csv",
+  "TC050526_d20/filtered_contig_annotations.csv",
+  "TC050526_boost1/filtered_contig_annotations.csv"
+)
+
+out <- tenx(
+  data          = paths,
+  project_names = c("d7", "d20", "boost1"),
+  method        = "sticky_ends",
+  cell          = "B",
+  only_productive = TRUE,
+  only_true_cells = TRUE
+)
+# Barcodes: "AAACCTGA-1_d7", "AAACCTGA-1_d20", ...
+```
+
+### Per-chain independent Hamming (v0.14+)
+
+`max_edits_per_chain` enforces an independent raw Hamming cutoff on every chain
+separately. Two cells cluster together only when **every** chain's CDR3 is within
+the cutoff — not a single budget shared across the concatenated sequence. This
+is the biologically correct grouping for paired BCR/TCR data.
+
+```r
+# Absolute Hamming-1 per chain (IGH ≤ 1 edit AND IGK/IGL ≤ 1 edit)
+tenx(
+  data            = paths,
+  project_names   = project_names,
+  method          = "sticky_ends",
+  cell            = "B",
+  clonality_input = list(max_edits_per_chain = 1, stringdist_method = "hamming")
+)
+```
+
+Compare with the concatenated-string variant (1 edit across the full
+`<IGH_CDR3>_<IGK_CDR3>` string — looser because a long light-chain CDR3 can
+absorb the single edit while the heavy-chain CDR3 is changed):
+
+```r
+# 1 edit on the concatenated CDR3 (looser)
+tenx(..., clonality_input = list(max_edits = 1, stringdist_method = "hamming"))
 ```
 
 ### Multi-project IMGT processing

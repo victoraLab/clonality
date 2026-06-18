@@ -1,3 +1,9 @@
+# clonality 0.15
+
+README updated to document multi-sample ingestion (v0.13) and per-chain
+independent Hamming (v0.14). Bug fix: `per_chain_cdr3_cols` columns now
+correctly propagated into `clonal.df` via `carry_cols`.
+
 # clonality 0.14
 
 ## Per-chain independent Hamming in `tenx()` / `clonality()`
