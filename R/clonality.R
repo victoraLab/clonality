@@ -32,6 +32,12 @@
 #'   to be considered for sub-clustering by CDR3 distance. Used by [assigntenx()]
 #'   to enforce per-chain CDR3 length matching (so that paired cells with
 #'   compensating indels across chains do not share a bin).
+#' @param per_chain_cdr3_cols Optional character vector of column names holding
+#'   individual per-chain CDR3 sequences (e.g. `c("cdr3_nt_IGH", "cdr3_nt_IGK")`).
+#'   When provided together with `max_edits`, clustering uses the maximum Hamming
+#'   distance across all chains independently rather than the concatenated CDR3
+#'   string. Set automatically by [assigntenx()] when
+#'   `clonality_input = list(max_edits_per_chain = 1)` is used via [tenx()].
 #' @param filter_IMGT_sequences Filter for productive IMGT CDR3s before clustering.
 #' @param project Optional label column added to the result.
 #' @param quiet Return invisibly.
@@ -67,6 +73,7 @@ clonality <- function(data = "example.xlsx",
                       project = "project",
                       cdr3_tags = NULL,
                       extra_bin_cols = NULL,
+                      per_chain_cdr3_cols = NULL,
                       ...) {
 
   # ── internal helpers ────────────────────────────────────────────────────
@@ -189,12 +196,13 @@ clonality <- function(data = "example.xlsx",
 
     if (any(duplicated(clonal_id))) {
       tmp <- cluster_duplicates_by_cdr3(
-        clonal.df    = tmp,
-        clonal_id    = clonal_id,
-        cdr3_lengths = tmp$CDR3L,
-        dist_method  = stringdist_method[[k]],
-        h_height     = mismatch[[k]] / 100,
-        max_edits    = if (is.null(max_edits)) NULL else max_edits[[k]]
+        clonal.df           = tmp,
+        clonal_id           = clonal_id,
+        cdr3_lengths        = tmp$CDR3L,
+        dist_method         = stringdist_method[[k]],
+        h_height            = mismatch[[k]] / 100,
+        max_edits           = if (is.null(max_edits)) NULL else max_edits[[k]],
+        per_chain_cdr3_cols = per_chain_cdr3_cols
       )
     } else {
       tmp$clonality <- assign_unique_ids(tmp)

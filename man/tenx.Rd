@@ -16,19 +16,26 @@ tenx(
   add_columns = NULL,
   cellranger_version = NULL,
   ignore_version = FALSE,
-  airr_normalize = c("auto", "always", "never")
+  airr_normalize = c("auto", "always", "never"),
+  project_names = NULL
 )
 }
 \arguments{
-\item{data}{Data frame, character string (object name), or full path to a \code{filtered_contig_annotations.csv} or \code{all_contig_annotations.csv} file.}
+\item{data}{Data frame, character string (object name or path to a
+\code{filtered_contig_annotations.csv}), \strong{or} a list / character vector of
+multiple such inputs for multi-sample ingestion.}
 
 \item{experiment}{Character. Experiment name ID \code{optional}.}
 
-\item{method}{Character. Clonality inference method. One of: \code{"unique_paired"}, \code{"sticky_ends"}, \code{"unique_all"}. Default is \code{"unique_paired"}.}
+\item{method}{Character. Clonality inference method. One of:
+\code{"unique_paired"}, \code{"sticky_ends"}, \code{"unique_all"}. Default is
+\code{"unique_paired"}.}
 
-\item{only_productive}{Logical. Whether to filter non-productive chains. Default is \code{TRUE}.}
+\item{only_productive}{Logical. Whether to filter non-productive chains.
+Default is \code{TRUE}.}
 
-\item{only_true_cells}{Logical. Whether to filter out low-quality/non-true cells (i.e., \code{is_cell != TRUE}). Default is \code{TRUE}.}
+\item{only_true_cells}{Logical. Whether to filter out low-quality/non-true
+cells (i.e., \code{is_cell != TRUE}). Default is \code{TRUE}.}
 
 \item{clonality_input}{\strong{Named list} of overrides for the internal call
 to \code{\link[=clonality]{clonality()}} that defines clones once cells have been filtered and
@@ -84,33 +91,60 @@ tenx(data,
 tenx(data, clonality_input = list(file = "clones.xlsx"))
 }\if{html}{\out{</div>}}}
 
-\item{cell}{Character. Cell type to process. One of: \code{"B"} (B cells), \code{"T"} (T cells), \code{"Tgd"} (γδ T cells). Default is \code{"T"}.}
+\item{cell}{Character. Cell type to process. One of: \code{"B"} (B cells), \code{"T"}
+(T cells), \code{"Tgd"} (γδ T cells). Default is \code{"T"}.}
 
-\item{col_res}{Character. Either \code{"full"} to retain all chain columns, or \code{"reduced"} to include only paired chains. Default is \code{"full"}.}
+\item{col_res}{Character. Either \code{"full"} to retain all chain columns, or
+\code{"reduced"} to include only paired chains. Default is \code{"full"}.}
 
-\item{add_columns}{Character vector. Additional metadata columns to include in the output. Optional.}
+\item{add_columns}{Character vector. Additional metadata columns to include
+in the output. Optional.}
 
 \item{cellranger_version}{Integer. Supported: 3, 7, or 9. Used to validate the expected number of columns. Default is 7.}
 
 \item{ignore_version}{Logical. If \code{TRUE}, skip version-based column-count validation. Default is \code{FALSE}.}
 
-\item{airr_normalize}{Character. One of \code{"auto"} (default), \code{"always"}, \code{"never"}.
-Controls whether AIRR / IgBLAST quirks (comma-separated alleles, logical-form
-\code{productive}) are normalized via \code{\link[=normalize_airr_to_cellranger]{normalize_airr_to_cellranger()}} before
-column renaming. \code{"auto"} triggers normalization only when AIRR-style
-patterns are detected.}
+\item{airr_normalize}{Character. One of \code{"auto"} (default), \code{"always"},
+\code{"never"}. Controls whether AIRR / IgBLAST quirks (comma-separated
+alleles, logical-form \code{productive}) are normalized via
+\code{\link[=normalize_airr_to_cellranger]{normalize_airr_to_cellranger()}} before column renaming. \code{"auto"} triggers
+normalization only when AIRR-style patterns are detected.}
+
+\item{project_names}{Character vector of unique sample labels, one per
+element of \code{data}. Required when \code{data} contains multiple inputs. Each
+barcode is suffixed with its label so that barcodes remain unique across
+samples. Ignored for single-input calls.}
 }
 \value{
-Annotated clonality matrix with clonal group information, invisibly returned after internal call to \code{assigntenx()}.
+Annotated clonality matrix with clonal group information, invisibly
+returned after internal call to \code{assigntenx()}.
 }
 \description{
-Loads and processes 10x Genomics V(D)J output (either as a data frame, file path, or object name), filters and groups by cell barcode, and assigns clonal definitions.
+Loads and processes 10x Genomics V(D)J output (either as a data frame, file
+path, or object name), filters and groups by cell barcode, and assigns clonal
+definitions.
 }
 \details{
-Supports BCR, TCR, and γδ TCR data from Cell Ranger versions 3 (18 columns) and 7 (31 columns).
+When \code{data} is a \strong{list or character vector of multiple inputs}, each element
+is loaded and processed independently; barcodes are suffixed with the
+corresponding \code{project_names} entry (\code{paste0(barcode, "_", project_name)}) to
+ensure uniqueness across samples before the combined data are grouped and
+clonotyped together. \code{project_names} is required in this mode.
+
+Supports BCR, TCR, and γδ TCR data from Cell Ranger versions 3 (18 columns)
+and 7 (31 columns).
 }
 \examples{
 \dontrun{
-Cellranger7_BCR1 <- tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B")
+# Single sample
+out <- tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B")
+
+# Multi-sample: barcodes are suffixed with the project name
+out <- tenx(
+  data         = list("sample1.csv", "sample2.csv"),
+  project_names = c("S1", "S2"),
+  method       = "sticky_ends",
+  cell         = "B"
+)
 }
 }

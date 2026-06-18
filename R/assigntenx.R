@@ -231,6 +231,18 @@ assigntenx <- function(list.pairs = list.pairs,
     # user override
     clonality_args <- utils::modifyList(default_clonality_args, as.list(clonality_input))
 
+    # Intercept max_edits_per_chain: enforce independent per-chain Hamming cutoff.
+    # Converts to max_edits + per_chain_cdr3_cols before passing to clonality().
+    if (!is.null(clonality_args[["max_edits_per_chain"]])) {
+      per_chain_cols <- grep("^cdr3_nt_", names(df.full), value = TRUE)
+      if (length(per_chain_cols) == 0L) {
+        warning("max_edits_per_chain set but no cdr3_nt_* columns found; ",
+                "falling back to concatenated CDR3 with max_edits.", call. = FALSE)
+      }
+      clonality_args[["max_edits"]]           <- clonality_args[["max_edits_per_chain"]]
+      clonality_args[["per_chain_cdr3_cols"]] <- per_chain_cols
+      clonality_args[["max_edits_per_chain"]] <- NULL
+    }
 
     # Construct full or reduced metadata frame
     df1 <- switch(

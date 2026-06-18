@@ -1,6 +1,6 @@
 Package: clonality
 Title: Easily Define Groups Of T/B Cells
-Version: 0.13
+Version: 0.14
 Authors@R: 
     person(given = "Tiago Bruno",
            family = "Rezende de Castro",
@@ -39,4 +39,4 @@ Depends:
     R (>= 3.5)
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3

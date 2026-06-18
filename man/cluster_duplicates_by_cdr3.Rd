@@ -10,7 +10,8 @@ cluster_duplicates_by_cdr3(
   cdr3_lengths,
   dist_method = "osa",
   h_height = 0,
-  max_edits = NULL
+  max_edits = NULL,
+  per_chain_cdr3_cols = NULL
 )
 }
 \arguments{
@@ -29,6 +30,15 @@ length-normalized distance (\verb{stringdist / CDR3 length}). Ignored when \code
 RAW (un-normalized) \code{stringdist} at this height instead of the length-normalized \code{h_height} —
 e.g. \code{max_edits = 1} with \code{dist_method = "hamming"} is a true absolute Hamming-1 (one mismatch
 regardless of CDR3 length). \code{max_edits = 0} is exact-identity (same as \code{h_height = 0}).}
+
+\item{per_chain_cdr3_cols}{Optional character vector of column names holding the
+individual per-chain CDR3 sequences (e.g. \code{c("cdr3_nt_IGH", "cdr3_nt_IGK")}).
+When provided together with \code{max_edits}, the distance between two cells is
+defined as the \strong{maximum Hamming distance across all chains independently} —
+i.e. two cells cluster together only when every chain's CDR3 is within
+\code{max_edits} edits of its counterpart. This is a stricter, biologically more
+accurate criterion than applying \code{max_edits} to the concatenated CDR3 string.
+Ignored when \code{max_edits} is \code{NULL}.}
 }
 \value{
 A data frame with an added \code{clonality} column.

@@ -1,3 +1,30 @@
+# clonality 0.14
+
+## Per-chain independent Hamming in `tenx()` / `clonality()`
+
+`tenx(clonality_input = list(max_edits_per_chain = 1, stringdist_method = "hamming"))`
+now enforces an **independent** raw Hamming-1 cutoff on every chain separately.
+Two cells cluster together only when *every* chain's CDR3 is within 1 edit of its
+counterpart — not 1 edit on the concatenated string.
+
+Internally, `assigntenx()` intercepts `max_edits_per_chain`, auto-detects the
+`cdr3_nt_*` per-chain columns in the data frame, and passes them as
+`per_chain_cdr3_cols` to `clonality()`. The new `per_chain_cdr3_cols` parameter
+is also available directly in `clonality()` for non-10x workflows.
+
+The distance between two cells is `max(hamming(chain_k_a, chain_k_b) for each k)`;
+complete-linkage hclust cut at `h = max_edits` ensures within-cluster consistency.
+
+```r
+tenx(
+  data            = paths,
+  project_names   = project_names,
+  method          = "sticky_ends",
+  cell            = "B",
+  clonality_input = list(max_edits_per_chain = 1, stringdist_method = "hamming")
+)
+```
+
 # clonality 0.13
 
 ## Multi-sample ingestion in `tenx()`

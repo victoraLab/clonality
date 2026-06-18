@@ -22,6 +22,7 @@ clonality(
   project = "project",
   cdr3_tags = NULL,
   extra_bin_cols = NULL,
+  per_chain_cdr3_cols = NULL,
   ...
 )
 }
@@ -62,6 +63,13 @@ appended to the V/J/length bin key. Cells must match on all of these columns
 to be considered for sub-clustering by CDR3 distance. Used by \code{\link[=assigntenx]{assigntenx()}}
 to enforce per-chain CDR3 length matching (so that paired cells with
 compensating indels across chains do not share a bin).}
+
+\item{per_chain_cdr3_cols}{Optional character vector of column names holding
+individual per-chain CDR3 sequences (e.g. \code{c("cdr3_nt_IGH", "cdr3_nt_IGK")}).
+When provided together with \code{max_edits}, clustering uses the maximum Hamming
+distance across all chains independently rather than the concatenated CDR3
+string. Set automatically by \code{\link[=assigntenx]{assigntenx()}} when
+\code{clonality_input = list(max_edits_per_chain = 1)} is used via \code{\link[=tenx]{tenx()}}.}
 
 \item{...}{Passed to \code{read_repertoire()}.}
 }
