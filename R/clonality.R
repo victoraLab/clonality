@@ -129,7 +129,7 @@ clonality <- function(data = "example.xlsx",
     stop("Some rows contain missing V or J genes.", call. = FALSE)
   }
 
-  carry_cols <- unique(c(cdr3_col, extra_bin_cols))
+  carry_cols <- unique(c(cdr3_col, extra_bin_cols, per_chain_cdr3_cols))
   simple.df <- simplify_genenames(
     data = cbind(sub.df, df[, carry_cols, drop = FALSE]),
     cell = cell

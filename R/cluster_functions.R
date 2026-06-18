@@ -60,6 +60,7 @@ cluster_duplicates_by_cdr3 <- function(clonal.df, clonal_id, cdr3_lengths,
     # Two cells cluster together iff every chain is within max_edits of its counterpart.
     if (per_chain) {
       seqs_list <- lapply(per_chain_cdr3_cols, function(col) {
+        if (!col %in% names(clonal.df)) return(rep("", length(idx)))
         s <- as.character(clonal.df[[col]][idx])
         s[is.na(s)] <- ""
         s
