@@ -340,7 +340,19 @@ add_seurat_metadata <- function(seu = NULL,
     if (!"dominant_purity"      %in% names(c1)) c1$dominant_purity      <- NA_real_
   }
 
+  # Keep ONE row per barcode if the caller's clonal pools overlap (e.g. both light classes are
+  # present, so a heavy-only cell can map into an IGH_IGK *and* an IGH_IGL clone): prefer the paired
+  # assignment, then multi-chain, then single -- never emit a duplicate barcode (the sticky rescue's
+  # `purity` guard already resolves which single pair a heavy-only cell joins).
+  if (nrow(c1)) c1$.sticky_prio <- 3L
+  if (nrow(c2)) c2$.sticky_prio <- 1L
+  if (nrow(c3)) c3$.sticky_prio <- 2L
   c0 <- dplyr::bind_rows(c1, c2, c3)
+  if ("barcodes" %in% names(c0) && any(duplicated(c0[["barcodes"]]))) {
+    c0 <- c0[order(c0$.sticky_prio), , drop = FALSE]
+    c0 <- c0[!duplicated(c0[["barcodes"]]), , drop = FALSE]
+  }
+  c0$.sticky_prio <- NULL
 
   if (".clonal_source" %in% names(c0)) {
     c0$.clonal_source <- NULL
