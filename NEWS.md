@@ -1,3 +1,26 @@
+# clonality 0.13
+
+## Multi-sample ingestion in `tenx()`
+
+`tenx()` now accepts a list or character vector of multiple inputs in one call.
+Each sample is loaded and filtered independently; barcodes are suffixed with the
+corresponding `project_names` entry so they remain unique across samples.
+Clonotype assignment then runs on the combined pool, so cells sharing a CDR3
+across samples naturally receive the same clone ID.
+
+```r
+out <- tenx(
+  data          = list("sample1.csv", "sample2.csv", "sample3.csv"),
+  project_names = c("d7", "d20", "boost1"),
+  method        = "sticky_ends",
+  cell          = "B"
+)
+# Barcodes: "AAACCTGA-1_d7", "AAACCTGA-1_d20", ...
+```
+
+The single-sample API is unchanged. Internally the load → normalize → filter
+logic was extracted into a `.tenx_prepare_sample()` helper called by both paths.
+
 # clonality 0.12
 
 ## Bug fix: per-chain CDR3 length binning in paired clones (via `tenx()`)

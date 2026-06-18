@@ -1,6 +1,6 @@
 Package: clonality
 Title: Easily Define Groups Of T/B Cells
-Version: 0.12
+Version: 0.13
 Authors@R: 
     person(given = "Tiago Bruno",
            family = "Rezende de Castro",

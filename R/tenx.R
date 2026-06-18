@@ -1,14 +1,33 @@
 #' Annotate 10x clones with clonality information
 #'
-#' Loads and processes 10x Genomics V(D)J output (either as a data frame, file path, or object name), filters and groups by cell barcode, and assigns clonal definitions.
+#' Loads and processes 10x Genomics V(D)J output (either as a data frame, file
+#' path, or object name), filters and groups by cell barcode, and assigns clonal
+#' definitions.
 #'
-#' Supports BCR, TCR, and γδ TCR data from Cell Ranger versions 3 (18 columns) and 7 (31 columns).
+#' When `data` is a **list or character vector of multiple inputs**, each element
+#' is loaded and processed independently; barcodes are suffixed with the
+#' corresponding `project_names` entry (`paste0(barcode, "_", project_name)`) to
+#' ensure uniqueness across samples before the combined data are grouped and
+#' clonotyped together. `project_names` is required in this mode.
 #'
-#' @param data Data frame, character string (object name), or full path to a `filtered_contig_annotations.csv` or `all_contig_annotations.csv` file.
+#' Supports BCR, TCR, and γδ TCR data from Cell Ranger versions 3 (18 columns)
+#' and 7 (31 columns).
+#'
+#' @param data Data frame, character string (object name or path to a
+#'   `filtered_contig_annotations.csv`), **or** a list / character vector of
+#'   multiple such inputs for multi-sample ingestion.
+#' @param project_names Character vector of unique sample labels, one per
+#'   element of `data`. Required when `data` contains multiple inputs. Each
+#'   barcode is suffixed with its label so that barcodes remain unique across
+#'   samples. Ignored for single-input calls.
 #' @param experiment Character. Experiment name ID `optional`.
-#' @param method Character. Clonality inference method. One of: `"unique_paired"`, `"sticky_ends"`, `"unique_all"`. Default is `"unique_paired"`.
-#' @param only_productive Logical. Whether to filter non-productive chains. Default is `TRUE`.
-#' @param only_true_cells Logical. Whether to filter out low-quality/non-true cells (i.e., `is_cell != TRUE`). Default is `TRUE`.
+#' @param method Character. Clonality inference method. One of:
+#'   `"unique_paired"`, `"sticky_ends"`, `"unique_all"`. Default is
+#'   `"unique_paired"`.
+#' @param only_productive Logical. Whether to filter non-productive chains.
+#'   Default is `TRUE`.
+#' @param only_true_cells Logical. Whether to filter out low-quality/non-true
+#'   cells (i.e., `is_cell != TRUE`). Default is `TRUE`.
 #' @param clonality_input **Named list** of overrides for the internal call
 #'   to [clonality()] that defines clones once cells have been filtered and
 #'   grouped by chain class. `tenx()` builds a per-cell metadata table and
@@ -61,21 +80,34 @@
 #'   # Save the per-chain-class clonality table to disk:
 #'   tenx(data, clonality_input = list(file = "clones.xlsx"))
 #'   ```
-#' @param cell Character. Cell type to process. One of: `"B"` (B cells), `"T"` (T cells), `"Tgd"` (γδ T cells). Default is `"T"`.
-#' @param col_res Character. Either `"full"` to retain all chain columns, or `"reduced"` to include only paired chains. Default is `"full"`.
-#' @param add_columns Character vector. Additional metadata columns to include in the output. Optional.
-#' @param airr_normalize Character. One of `"auto"` (default), `"always"`, `"never"`.
-#'   Controls whether AIRR / IgBLAST quirks (comma-separated alleles, logical-form
-#'   `productive`) are normalized via [normalize_airr_to_cellranger()] before
-#'   column renaming. `"auto"` triggers normalization only when AIRR-style
-#'   patterns are detected.
+#' @param cell Character. Cell type to process. One of: `"B"` (B cells), `"T"`
+#'   (T cells), `"Tgd"` (γδ T cells). Default is `"T"`.
+#' @param col_res Character. Either `"full"` to retain all chain columns, or
+#'   `"reduced"` to include only paired chains. Default is `"full"`.
+#' @param add_columns Character vector. Additional metadata columns to include
+#'   in the output. Optional.
+#' @param airr_normalize Character. One of `"auto"` (default), `"always"`,
+#'   `"never"`. Controls whether AIRR / IgBLAST quirks (comma-separated
+#'   alleles, logical-form `productive`) are normalized via
+#'   [normalize_airr_to_cellranger()] before column renaming. `"auto"` triggers
+#'   normalization only when AIRR-style patterns are detected.
 #' @inheritParams cellranger_version_parser
-#' @return Annotated clonality matrix with clonal group information, invisibly returned after internal call to `assigntenx()`.
+#' @return Annotated clonality matrix with clonal group information, invisibly
+#'   returned after internal call to `assigntenx()`.
 #'
 #' @examples
 #' \dontrun{
-#' Cellranger7_BCR1 <- tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B")
-#'}
+#' # Single sample
+#' out <- tenx(data = Cellranger7_BCR1, method = "sticky_ends", cell = "B")
+#'
+#' # Multi-sample: barcodes are suffixed with the project name
+#' out <- tenx(
+#'   data         = list("sample1.csv", "sample2.csv"),
+#'   project_names = c("S1", "S2"),
+#'   method       = "sticky_ends",
+#'   cell         = "B"
+#' )
+#' }
 #' @import dplyr
 #' @importFrom stringr str_extract
 #' @importFrom openxlsx write.xlsx
@@ -91,7 +123,8 @@ tenx <- function(data = NULL,
                  add_columns = NULL,
                  cellranger_version = NULL,
                  ignore_version = FALSE,
-                 airr_normalize = c("auto", "always", "never")) {
+                 airr_normalize = c("auto", "always", "never"),
+                 project_names = NULL) {
 
   # Validate method
   if (!method %in% c("unique_paired", "sticky_ends", "unique_all")) {
@@ -115,69 +148,63 @@ tenx <- function(data = NULL,
     stop("`clonality_input` must be a named list (or NULL).", call. = FALSE)
   }
 
-  # Use example fallback if NULL
-  if (is.null(data)) {
-    warning("No input. Running on example data.")
-    data <- Cellranger7_BCR1
-  }
+  # ── Multi-sample support ───────────────────────────────────────────────────
+  # Detect multiple inputs: a list with > 1 element, or a character vector with
+  # > 1 element (multiple file paths). A single data frame is never multi.
+  is_multi <- !is.data.frame(data) &&
+              (is.list(data) || (is.character(data) && length(data) > 1)) &&
+              length(data) > 1
 
-  # Validate and load data using the parser
-  data <- cellranger_version_parser(data,
-                                    cellranger_version = cellranger_version,
-                                    ignore_version = ignore_version)
+  if (is_multi) {
+    if (is.null(project_names)) {
+      stop(
+        "`project_names` must be provided when `data` contains multiple inputs.",
+        call. = FALSE
+      )
+    }
+    if (length(project_names) != length(data)) {
+      stop(
+        "`project_names` must be the same length as `data` (",
+        length(data), " inputs, ", length(project_names), " names provided).",
+        call. = FALSE
+      )
+    }
+    if (anyDuplicated(project_names)) {
+      stop("`project_names` must be unique.", call. = FALSE)
+    }
 
-  # Optionally normalize AIRR / IgBLAST quirks (comma-separated alleles,
-  # logical-form productive flag) before column renaming.
-  if (airr_normalize == "always" ||
-      (airr_normalize == "auto" && .looks_like_airr(data))) {
-    data <- normalize_airr_to_cellranger(data)
-  }
+    samples <- lapply(seq_along(data), function(i) {
+      message("Loading sample ", i, "/", length(data), ": ", project_names[[i]])
+      .tenx_prepare_sample(
+        data               = data[[i]],
+        cellranger_version = cellranger_version,
+        ignore_version     = ignore_version,
+        airr_normalize     = airr_normalize,
+        only_productive    = only_productive,
+        only_true_cells    = only_true_cells,
+        cell               = cell,
+        project_name       = project_names[[i]]
+      )
+    })
+    data <- dplyr::bind_rows(samples)
 
-  data <- normalize_tenx_columns(data)
+  } else {
+    # Single sample (existing behavior)
+    if (is.null(data)) {
+      warning("No input. Running on example data.")
+      data <- Cellranger7_BCR1
+    }
 
-  if (!"cdr3_nt" %in% names(data) && "cdr3" %in% names(data)) {
-    data$cdr3_nt <- data$cdr3
-    warning(
-      "Input does not contain `cdr3_nt`; falling back to amino-acid CDR3 values for clonotype assignment.",
-      call. = FALSE
+    data <- .tenx_prepare_sample(
+      data               = data,
+      cellranger_version = cellranger_version,
+      ignore_version     = ignore_version,
+      airr_normalize     = airr_normalize,
+      only_productive    = only_productive,
+      only_true_cells    = only_true_cells,
+      cell               = cell,
+      project_name       = NULL
     )
-  }
-
-  required_cols <- c("barcode", "chain", "cdr3_nt", "v_gene", "j_gene")
-  missing_cols <- setdiff(required_cols, names(data))
-  if (length(missing_cols) > 0) {
-    stop(
-      "Input is missing required 10x/AIRR columns after normalization: ",
-      paste(missing_cols, collapse = ", "),
-      ".",
-      call. = FALSE
-    )
-  }
-
-  # Remove empty or NA CDR3s
-  data <- data[data$cdr3_nt != "" & !is.na(data$cdr3_nt), ]
-
-  if (!nrow(data)) {
-    stop(
-      "No rows remain after preprocessing. Check that your input includes non-missing CDR3 nucleotide data ",
-      "(`cdr3_nt` or an alias such as `junction`) and that any requested filters are not removing all rows.",
-      call. = FALSE
-    )
-  }
-
-  # Apply shared chain filters (productive / true cells) for all cell types
-  if (only_productive) {
-    data <- dplyr::filter(data, grepl("true", productive, ignore.case = TRUE))
-  }
-
-  if (only_true_cells) {
-    data <- dplyr::filter(data, grepl("true", is_cell, ignore.case = TRUE))
-  }
-
-  # Special handling for gamma-delta T cells
-  if (cell == "Tgd") {
-    data <- data %>%
-      filter(chain != "None", !grepl("\\*", cdr3))
   }
 
   # Split by barcode and organize chains
@@ -265,6 +292,80 @@ normalize_tenx_columns <- function(data) {
 
   if (!"raw_clonotype_id" %in% names(data)) {
     data$raw_clonotype_id <- NA_character_
+  }
+
+  data
+}
+
+# Load, normalize, filter, and optionally suffix barcodes for one sample.
+# Used by tenx() for both single- and multi-sample paths.
+.tenx_prepare_sample <- function(data,
+                                  cellranger_version,
+                                  ignore_version,
+                                  airr_normalize,
+                                  only_productive,
+                                  only_true_cells,
+                                  cell,
+                                  project_name = NULL) {
+
+  data <- cellranger_version_parser(data,
+                                    cellranger_version = cellranger_version,
+                                    ignore_version = ignore_version)
+
+  if (airr_normalize == "always" ||
+      (airr_normalize == "auto" && .looks_like_airr(data))) {
+    data <- normalize_airr_to_cellranger(data)
+  }
+
+  data <- normalize_tenx_columns(data)
+
+  if (!"cdr3_nt" %in% names(data) && "cdr3" %in% names(data)) {
+    data$cdr3_nt <- data$cdr3
+    warning(
+      "Input does not contain `cdr3_nt`; falling back to amino-acid CDR3 values for clonotype assignment.",
+      call. = FALSE
+    )
+  }
+
+  required_cols <- c("barcode", "chain", "cdr3_nt", "v_gene", "j_gene")
+  missing_cols <- setdiff(required_cols, names(data))
+  if (length(missing_cols) > 0) {
+    stop(
+      "Input is missing required 10x/AIRR columns after normalization: ",
+      paste(missing_cols, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+
+  # Remove empty or NA CDR3s
+  data <- data[data$cdr3_nt != "" & !is.na(data$cdr3_nt), ]
+
+  if (!nrow(data)) {
+    stop(
+      "No rows remain after preprocessing. Check that your input includes non-missing CDR3 nucleotide data ",
+      "(`cdr3_nt` or an alias such as `junction`) and that any requested filters are not removing all rows.",
+      call. = FALSE
+    )
+  }
+
+  if (only_productive) {
+    data <- dplyr::filter(data, grepl("true", productive, ignore.case = TRUE))
+  }
+
+  if (only_true_cells) {
+    data <- dplyr::filter(data, grepl("true", is_cell, ignore.case = TRUE))
+  }
+
+  # Special handling for gamma-delta T cells
+  if (cell == "Tgd") {
+    data <- data %>%
+      filter(chain != "None", !grepl("\\*", cdr3))
+  }
+
+  # Suffix barcodes with project name so they remain unique across samples
+  if (!is.null(project_name)) {
+    data$barcode <- paste0(data$barcode, "_", project_name)
   }
 
   data
